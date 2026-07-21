@@ -1,0 +1,62 @@
+{
+  "name": "whatsapp-blast",
+  "version": "1.0.0",
+  "description": "Scheduled WhatsApp Blast Tool with MongoDB integration and Puppeteer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "release": "electron-builder --win -p always"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "mongoose": "^8.2.0",
+    "dotenv": "^16.4.5",
+    "whatsapp-web.js": "^1.26.0",
+    "electron-updater": "^6.1.4"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.wablast.scheduler",
+    "productName": "WABlast",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!data/**/*",
+      "!.env",
+      "!dist/**/*",
+      "!bin/**/*",
+      "!scratch/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WA Blast"
+    },
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "ranggadana13",
+      "repo": "whatsapp-blast-releases"
+    }
+  }
+}

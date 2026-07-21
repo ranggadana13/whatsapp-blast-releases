@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Blast - Dashboard Terjadwal</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="app.css">
+  <style>
+    select option {
+      background-color: #1e1e2e !important;
+      color: #fff !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container" id="main-app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fab fa-whatsapp"></i>
+        </div>
+        <div class="brand-text">
+          <h2>WA Blast</h2>
+          <span>Scheduled Sender</span>
+        </div>
+        <button id="btn-collapse-sidebar" class="btn-toggle-sidebar-collapse" title="Sembunyikan Menu">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+      
+      <nav class="nav-menu">
+        <a href="#" class="nav-item active" data-tab="dashboard">
+          <i class="fas fa-chart-line"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="ai-blaster-tab">
+          <i class="fas fa-magic"></i>
+          <span>AI Blaster</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="profiles-tab">
+          <i class="fas fa-qrcode"></i>
+          <span>Profil WhatsApp</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="campaign-list">
+          <i class="fas fa-list-check"></i>
+          <span>Daftar Blast</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="reports">
+          <i class="fas fa-chart-bar"></i>
+          <span>Laporan Rekap</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="feedbacks-tab">
+          <i class="fas fa-comments"></i>
+          <span>Respon Pelanggan</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="bot-autoreply">
+          <i class="fas fa-robot"></i>
+          <span>Bot Auto-Reply</span>
+        </a>
+        <a href="#" class="nav-item" data-tab="settings-tab">
+          <i class="fas fa-cog"></i>
+          <span>Pengaturan</span>
+        </a>
+      </nav>
+      
+      </nav>
+    </aside>
+    
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <button id="btn-expand-sidebar" class="btn-toggle-sidebar-expand" title="Tampilkan Menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 id="page-title">Dashboard</h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- WhatsApp Connection Status Pill -->
+          <div class="connection-pill" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">
+            <span class="status-indicator disconnected" id="pill-indicator"></span>
+            <span id="pill-text">Memuat...</span>
+          </div>
+
+          <!-- Expiry Date Alert Bar -->
+          <div id="license-expiry-bar" style="display: none; padding: 6px 12px; border-radius: 8px; font-size: 12.5px; line-height: 1.2; font-weight: 500; text-align: left;">
+            <!-- Loaded dynamically via JS -->
+          </div>
+
+          <!-- App Version & Update Badge -->
+          <div id="app-version-badge" style="padding: 6px 12px; border-radius: 8px; font-size: 12.5px; line-height: 1.2; font-weight: 500; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #a3a3a3; display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-code-branch"></i> <span id="app-version-text">v1.0.0</span>
+          </div>
+          <div class="current-time" id="clock-display">00:00:00</div>
+        </div>
+      </header>
+      
+      <!-- TAB 1: DASHBOARD -->
+      <section class="tab-content active" id="tab-dashboard">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-bullhorn"></i></div>
+            <div class="stat-info">
+              <h3>Total Campaign</h3>
+              <p id="stat-total-campaigns">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
+            <div class="stat-info">
+              <h3>Pesan Terkirim</h3>
+              <p id="stat-sent">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-info">
+              <h3>Gagal Kirim</h3>
+              <p id="stat-failed">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-clock"></i></div>
+            <div class="stat-info">
+              <h3>Menunggu Antrean</h3>
+              <p id="stat-pending">0</p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Chart Panel -->
+        <div class="panel glass chart-panel" style="margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: var(--color-text); font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-chart-line" style="color: var(--accent-primary);"></i> Performa Pengiriman (7 Hari Terakhir)
+            </h2>
+            <div style="display: flex; gap: 12px; font-size: 12.5px; color: var(--color-text-muted);">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-primary); box-shadow: 0 0 8px var(--accent-primary);"></span> Terkirim
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--accent-danger); box-shadow: 0 0 8px var(--accent-danger);"></span> Gagal
+              </span>
+            </div>
+          </div>
+          <div class="chart-wrapper" style="width: 100%; height: 200px; position: relative;">
+            <div id="chart-empty-msg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(23, 23, 23, 0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border-radius: var(--radius-md); text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 5;">
+              <i class="fas fa-chart-line" style="font-size: 32px; color: var(--accent-primary); margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));"></i>
+              <h4 style="font-size: 15px; font-weight: 600; color: #fff; margin: 0 0 4px 0;">Belum Ada Riwayat Pengiriman</h4>
+              <p style="font-size: 12px; color: var(--color-text-muted); margin: 0;">Diagram performa 7 hari terakhir akan muncul secara otomatis setelah Anda mulai mengirim pesan.</p>
+            </div>
+            <svg id="dashboard-svg-chart" style="width: 100%; height: 100%; overflow: visible;" viewBox="0 0 600 200" preserveAspectRatio="none">
+              <!-- Definitions for gradients and glowing filters -->
+              <defs>
+                <filter id="glow-emerald" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glow-rose" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <linearGradient id="gradient-emerald" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--accent-primary)" stop-opacity="0.25" />
+                  <stop offset="100%" stop-color="var(--accent-primary)" stop-opacity="0.0" />
+                </linearGradient>
+                <linearGradient id="gradient-rose" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--accent-danger)" stop-opacity="0.15" />
+                  <stop offset="100%" stop-color="var(--accent-danger)" stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+              
+              <!-- Grid Lines -->
+              <g id="chart-grid-lines" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1"></g>
+              
+              <!-- Area Under Curves -->
+              <path id="chart-area-sent" fill="url(#gradient-emerald)" d="" style="transition: d 0.5s ease;"></path>
+              <path id="chart-area-failed" fill="url(#gradient-rose)" d="" style="transition: d 0.5s ease;"></path>
+              
+              <!-- Glowing Line Paths -->
+              <path id="chart-line-sent" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" filter="url(#glow-emerald)" d="" style="transition: d 0.5s ease;"></path>
+              <path id="chart-line-failed" fill="none" stroke="var(--accent-danger)" stroke-width="2.5" filter="url(#glow-rose)" d="" style="transition: d 0.5s ease;"></path>
+              
+              <!-- Data Points (drawn dynamically) -->
+              <g id="chart-points-sent"></g>
+              <g id="chart-points-failed"></g>
+              
+              <!-- X & Y Axes and Labels -->
+              <g id="chart-x-labels" fill="var(--color-text-muted)" font-size="10" font-family="var(--font-primary)" text-anchor="middle"></g>
+            </svg>
+          </div>
+        </div>
+        
+        <!-- Live Connection & Logs Layout -->
+        <div class="dashboard-layout">
+          <!-- Connection Panel (Hidden) -->
+          <div class="panel glass connection-panel" style="display: none;">
+            <h2>Koneksi WhatsApp</h2>
+            <div class="connection-status-box">
+              <!-- States -->
+              <div id="status-disconnected" class="status-state active">
+                <div class="status-graphic">
+                  <i class="fas fa-qrcode-lock"></i>
+                </div>
+                <p class="status-msg">WhatsApp belum terhubung.</p>
+                <button class="btn btn-primary" id="btn-connect">Hubungkan Sekarang</button>
+              </div>
+              
+              <div id="status-connecting" class="status-state">
+                <div class="loader-spinner"></div>
+                <p class="status-msg">Menyiapkan koneksi WhatsApp...</p>
+              </div>
+              
+              <div id="status-scanning" class="status-state">
+                <p class="status-msg">Pindai kode QR ini menggunakan WhatsApp di HP Anda:</p>
+                <div class="qr-container">
+                  <img id="qr-image" src="" alt="WhatsApp QR Code">
+                  <div class="qr-timer">
+                    <i class="fas fa-sync-alt spin"></i> Memperbarui QR...
+                  </div>
+                </div>
+                <p class="qr-instruction">Buka WhatsApp > Perangkat Tertaut > Tautkan Perangkat</p>
+              </div>
+              
+              <div id="status-connected" class="status-state">
+                <div class="status-graphic connected">
+                  <i class="fas fa-link"></i>
+                </div>
+                <p class="status-msg green-text">WhatsApp Terhubung dan Siap Kirim!</p>
+                <button class="btn btn-danger" id="btn-disconnect">Putuskan Koneksi</button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Recent Activity Logs -->
+          <div class="panel glass log-panel">
+            <h2>Aktivitas Pengiriman Terkini</h2>
+            <div class="log-table-container">
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>Waktu</th>
+                    <th>Nama Campaign</th>
+                    <th>Nama Kontak</th>
+                    <th>No. HP</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="log-table-body">
+                  <tr>
+                    <td colspan="5" class="empty-state">Belum ada riwayat aktivitas pengiriman.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- TAB: AI BLASTER (Split Scheduler + AI Browser) -->
+      <section class="tab-content" id="tab-ai-blaster-tab">
+        
+        <div id="ai-blaster-workspace-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; height: calc(100vh - 120px); min-height: 520px; max-width: 100%; width: 100%;">
+          
+          <!-- LEFT COLUMN: Blaster Scheduler (Campaign / Individual) -->
+          <div id="ai-blaster-left-col" class="panel glass" style="display: flex; flex-direction: column; padding: 20px; overflow-y: auto; height: 100%;">
+            
+            <!-- Switcher: Campaign Massal vs Blast Individu -->
+            <div style="display: flex; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;">
+              <button type="button" class="btn btn-primary" id="btn-switch-blaster-mass" style="flex: 1; padding: 8px 12px; font-size: 13px; background: var(--accent-primary); border-color: var(--accent-primary);">
+                <i class="fas fa-bullhorn"></i> Campaign Massal (Broadcast)
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-switch-blaster-indiv" style="flex: 1; padding: 8px 12px; font-size: 13px; background: transparent; border-color: transparent;">
+                <i class="fas fa-user-tag"></i> Blast Individu (Follow-up)
+              </button>
+            </div>
+
+            <!-- CONTAINER A: Campaign Massal Form -->
+            <div id="ai-blaster-mass-container" style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
+              <form id="form-create-campaign-ai" class="campaign-form-layout" style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
+                
+                <!-- LEFT COLUMN: CAMPAIGN SETUP -->
+                <div class="campaign-setup-column" style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="campaign-name">Nama Campaign <span class="required">*</span></label>
+                    <input type="text" id="campaign-name" required placeholder="Contoh: Promo Diskon Idul Fitri">
+                  </div>
+
+                  <!-- WhatsApp Profiles Selection for Mass Campaign -->
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label style="margin-bottom: 8px; display: block;">Pilih Profil Pengirim <span class="required">*</span></label>
+                    <div id="camp-profiles-selection-container" style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.15); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); max-height: 120px; overflow-y: auto;">
+                      <!-- Checkboxes will be populated by JS -->
+                      <span style="font-size: 12px; color: var(--color-text-muted);">Memuat profil WhatsApp...</span>
+                    </div>
+                    <span class="helper-info" style="margin-top: 4px; display: block; font-size:11px;">Centang beberapa profil untuk mengaktifkan perutean bergantian (**Round-Robin** / anti-ban).</span>
+                  </div>
+
+                  <!-- CSV Upload Panel -->
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label>Daftar Kontak Penerima (CSV) <span class="required">*</span></label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.15); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);">
+                      <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                        <button type="button" class="btn btn-secondary import-tab-btn active" id="btn-csv-mode-upload" data-import-method="upload" style="flex:1; padding: 6px 10px; font-size: 11px;">Unggah File</button>
+                        <button type="button" class="btn btn-secondary import-tab-btn" id="btn-csv-mode-paste" data-import-method="paste" style="flex:1; padding: 6px 10px; font-size: 11px;">Salin Teks</button>
+                      </div>
+
+                      <div id="import-box-upload" class="import-method-box active">
+                        <div class="drag-drop-zone" id="csv-drop-zone" style="padding: 15px; border-radius: 8px;">
+                          <i class="fas fa-file-csv" style="font-size: 24px; margin-bottom: 5px;"></i>
+                          <span style="font-size: 12px; display:block;">Seret file CSV ke sini atau klik untuk mencari</span>
+                          <input type="file" id="csv-file-input" accept=".csv" style="display:none;">
+                          <span class="file-name-label" id="file-name-display" style="font-size:11px; margin-top:5px; color:var(--accent-secondary);">Belum ada file terpilih</span>
+                        </div>
+                      </div>
+
+                      <div id="import-box-paste" class="import-method-box">
+                        <textarea id="csv-paste-input" rows="3" style="font-size: 12px;" placeholder="Phone,Name,Produk&#10;08123456789,Rangga,Baju Koko&#10;08987654321,Budi,Sajadah Premium"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Parsed Contacts Preview Section -->
+                  <div id="parsed-contacts-section" style="display: none; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 12px; font-weight: 600; color: var(--accent-primary);">
+                        <i class="fas fa-users"></i> Kontak Terimpor: <span id="parsed-count">0</span>
+                      </span>
+                      <button type="button" class="btn btn-danger btn-small" id="btn-clear-contacts" style="padding: 4px 8px; font-size: 10px; background: rgba(220, 53, 69, 0.15); border-color: rgba(220, 53, 69, 0.25);">
+                        <i class="fas fa-trash-alt"></i> Bersihkan
+                      </button>
+                    </div>
+                    
+                    <!-- Preview Table Scroll Area -->
+                    <div style="max-height: 100px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(0,0,0,0.1);">
+                      <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                        <thead id="preview-table-head" style="position: sticky; top: 0; background: #262626; color: var(--accent-secondary); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                          <!-- Dynamic headers -->
+                        </thead>
+                        <tbody id="preview-table-body" style="color: #eee;">
+                          <!-- Dynamic rows -->
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="scheduled-time">Waktu Pengiriman <span class="required">*</span></label>
+                    <input type="datetime-local" id="scheduled-time" required style="padding: 6px 10px; font-size: 13px;">
+                  </div>
+
+                  <!-- Delay settings & buttons -->
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="delay-min">Jeda Min (Detik) <span class="required">*</span></label>
+                      <input type="number" id="delay-min" min="1" max="120" value="5" required style="padding: 6px 10px; font-size: 13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                      <label for="delay-max">Jeda Max (Detik) <span class="required">*</span></label>
+                      <input type="number" id="delay-max" min="1" max="120" value="15" required style="padding: 6px 10px; font-size: 13px;">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- RIGHT COLUMN: MESSAGES & A/B TESTING -->
+                <div class="campaign-templates-column" style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                      <label style="margin: 0; font-size: 14.5px;">Template Pesan & Variasi A/B Testing <span class="required">*</span></label>
+                      <button type="button" class="btn btn-open-ai-generator" style="padding: 6px 14px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #050505; border: none; box-shadow: 0 0 14px rgba(16, 185, 129, 0.45); display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;" title="Tulis pesan secara otomatis menggunakan AI">
+                        <i class="fas fa-magic"></i> Tulis Pesan dengan AI
+                      </button>
+                    </div>
+                    
+                    <div id="camp-templates-container" style="display:flex; flex-direction:column; gap:12px;">
+                      <!-- Primary template card (Social Media Style Composer) -->
+                      <div class="sm-composer-card ab-template-card">
+                        <!-- Composer Header -->
+                        <div class="sm-composer-header">
+                          <div class="sm-composer-profile">
+                            <div class="sm-composer-avatar">
+                              <i class="fas fa-bullhorn"></i>
+                            </div>
+                            <div class="sm-composer-info">
+                              <span class="sm-composer-title">Variasi Pesan #1</span>
+                              <span class="sm-composer-subtitle">Default (A/B Test)</span>
+                            </div>
+                          </div>
+                          <div class="sm-composer-weight-container">
+                            <span class="sm-composer-weight-label">Peluang:</span>
+                            <input type="number" class="camp-template-weight sm-composer-weight-input" value="100" min="1" max="100" required style="width: 50px;">
+                            <span style="font-size: 11px; color: var(--accent-secondary); font-weight: 700; margin-left: -2px;">%</span>
+                          </div>
+                        </div>
+
+                        <!-- Textarea (spaciously styled) -->
+                        <textarea class="camp-template-text sm-composer-textarea" required rows="4" placeholder="Tulis penawaran menarik Anda di sini... (cth: Halo {Nama}, kami punya promo khusus untuk Anda!)" style="min-height: 120px;"></textarea>
+
+                        <!-- Image Preview container -->
+                        <div class="sm-composer-media-box camp-img-preview-container" style="display: none;">
+                          <img class="sm-composer-media-img camp-img-preview" src="">
+                          <div class="sm-composer-media-remove btn-camp-remove-img" title="Hapus gambar">
+                            <i class="fas fa-times"></i>
+                          </div>
+                        </div>
+
+                        <!-- Emojis Bar (toggled by Emoji button) -->
+                        <div class="sm-composer-emojis-bar" style="display: none;">
+                          <button type="button" class="sm-emoji-btn" data-emoji="😀">😀</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="🔥">🔥</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="🚀">🚀</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="🎁">🎁</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="👉">👉</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="✅">✅</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="💯">💯</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="📞">📞</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="💬">💬</button>
+                          <button type="button" class="sm-emoji-btn" data-emoji="⭐">⭐</button>
+                        </div>
+
+                        <!-- Composer Toolbar -->
+                        <div class="sm-composer-toolbar">
+                          <div class="sm-composer-toolbar-left">
+                            <span class="sm-composer-toolbar-title">Tambahkan:</span>
+                            <button type="button" class="sm-composer-action-btn btn-image btn-camp-upload-img" title="Tambahkan Gambar">
+                              <i class="fas fa-image"></i>
+                            </button>
+                            <button type="button" class="sm-composer-action-btn btn-emoji" title="Masukkan Emoji">
+                              <i class="far fa-smile"></i>
+                            </button>
+                            <span class="camp-img-name-label" style="font-size: 11px; color: var(--color-text-muted); display: none;"></span>
+                            <input type="file" class="camp-img-file-input" accept="image/*" style="display: none;">
+                          </div>
+
+                          <!-- Variables tags on the right -->
+                          <div class="sm-composer-variables">
+                            <button type="button" class="sm-var-badge btn-var-pill-dynamic" data-var="{Nama}">{Nama}</button>
+                            <button type="button" class="sm-var-badge btn-var-pill-dynamic" data-var="{Nomor}">{Nomor}</button>
+                          </div>
+                        </div>
+
+                        <!-- Individual Template Button Builder -->
+                        <div class="sm-composer-buttons-area" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+                          <label class="switch-container" style="padding: 4px 0; margin-bottom: 8px;">
+                            <div class="switch-label-area">
+                              <span class="switch-label-title" style="font-size:12px; font-weight:600; color:#ccc;"><i class="fas fa-link"></i> Lampirkan Tombol Aksi (Link / Quick Reply)</span>
+                            </div>
+                            <div class="switch-control">
+                              <input type="checkbox" class="camp-template-toggle-buttons">
+                              <span class="switch-slider"></span>
+                            </div>
+                          </label>
+                          
+                          <div class="camp-template-buttons-builder" style="display: none; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+                            <div class="camp-template-buttons-list" style="display: flex; flex-direction: column; gap: 6px;">
+                              <!-- Dynamic button builder rows will be rendered here by JS -->
+                            </div>
+                            <button type="button" class="btn btn-secondary btn-small btn-camp-add-button-row" style="padding: 5px 10px; font-size:11px; align-self: flex-start; display: flex; align-items: center; gap: 4px;">
+                              <i class="fas fa-plus"></i> Tambah Tombol Aksi
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style="margin-top:10px;">
+                      <button type="button" class="btn btn-secondary btn-small" id="btn-add-camp-template" style="padding: 6px 10px; font-size:11.5px;">
+                        <i class="fas fa-plus"></i> Tambah Variasi Pesan
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btn-submit-campaign" class="btn btn-primary btn-large btn-block" style="padding: 12px 20px; font-size: 14.5px; background: var(--accent-primary); border-color: var(--accent-primary); margin-top: 10px;">
+                    <i class="fas fa-paper-plane"></i> Kirim & Jadwalkan WhatsApp Blast
+                  </button>
+                </div>
+
+              </form>
+            </div>
+
+            <!-- CONTAINER B: Blast Individu Form (hidden by default) -->
+            <div id="ai-blaster-indiv-container" style="display: none; flex-direction: column; gap: 15px; flex: 1;">
+              <form id="form-individual-blast-ai" style="display: flex; flex-direction: column; gap: 20px;">
+                
+                <!-- TOP PANEL: SETUP AREA (FULL WIDTH) -->
+                <div class="campaign-setup-column">
+                  <div class="panel glass" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px;">
+                    <h3 style="font-size: 15px; font-weight: 600; color: var(--accent-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                      <i class="fas fa-user-friends"></i> Profil Penerima & Pengirim
+                    </h3>
+                    
+                    <div class="individual-setup-grid" style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-phone">Nomor WhatsApp Penerima <span class="required">*</span></label>
+                        <input type="text" id="indiv-phone" required placeholder="Contoh: 08123456789">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-name">Nama Penerima (Opsional)</label>
+                        <input type="text" id="indiv-name" placeholder="Contoh: Rangga">
+                      </div>
+                      <!-- WhatsApp Profile Dropdown Selection for Individual Blast -->
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-profile-selector">Profil WhatsApp Pengirim <span class="required">*</span></label>
+                        <select id="indiv-profile-selector" class="form-control" required style="padding: 10px 14px; font-size: 13.5px; height: auto; background: #0d0d0d; border: 1px solid #292929; color: #fff;">
+                          <option value="">-- Pilih Profil WhatsApp --</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BOTTOM AREA: MESSAGES TIMELINE (FULL WIDTH) -->
+                <div class="campaign-templates-column" style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                      <label style="margin: 0; font-size: 15px; font-weight: 600;"><i class="fas fa-history"></i> Urutan Pesan & Waktu Pengiriman (Follow-up Timeline)</label>
+                      <button type="button" class="btn btn-open-ai-generator" style="padding: 6px 14px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #050505; border: none; box-shadow: 0 0 14px rgba(16, 185, 129, 0.45); display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;" title="Tulis pesan secara otomatis menggunakan AI">
+                        <i class="fas fa-magic"></i> Tulis Pesan dengan AI
+                      </button>
+                    </div>
+                    
+                    <div id="indiv-messages-container" style="display: flex; flex-direction: column; gap: 15px;">
+                      <!-- Dynamic message cards will be created here -->
+                    </div>
+                    
+                    <div style="margin-top: 12px;">
+                      <button type="button" class="btn btn-secondary btn-small" id="btn-add-followup-message" style="padding: 8px 16px; font-size: 12px;">
+                        <i class="fas fa-plus"></i> Tambah Pesan Follow-Up Lain
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btn-submit-individual" class="btn btn-primary btn-large btn-block" style="padding: 14px 28px; font-size: 15px; background: var(--accent-primary); border-color: var(--accent-primary); margin-top: 10px;">
+                    <i class="fas fa-paper-plane"></i> Kirim & Jadwalkan Follow-Up
+                  </button>
+                </div>
+
+              </form>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: PROFIL WHATSAPP -->
+      <section class="tab-content" id="tab-profiles-tab">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; min-height: 500px;">
+          
+          <!-- Left side: Add profile & QR scanner -->
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            
+            <!-- Panel: RAM Health & System Safety Guard -->
+            <div class="panel glass" id="ram-health-panel" style="padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: rgba(16,185,129,0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 15px;" id="ram-icon-box">
+                  <i class="fas fa-memory"></i>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                  <span style="font-size: 13px; font-weight: 600; color: #fff;" id="ram-status-title">Proteksi Memori RAM: Memuat...</span>
+                  <span style="font-size: 11.5px; color: var(--color-text-muted);" id="ram-status-desc">Mendeteksi kapasitas sistem...</span>
+                </div>
+              </div>
+              <span id="ram-status-badge" style="font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2);">Optimal</span>
+            </div>
+
+            <!-- Panel: Add Profile -->
+            <div class="panel glass" style="padding: 20px;">
+              <h2 style="color: var(--accent-primary); display: flex; align-items: center; gap: 8px; font-size: 16px; margin-bottom:15px;">
+                <i class="fas fa-plus-circle"></i> Tambah Profil WhatsApp Baru
+              </h2>
+              <form id="form-create-profile" style="display:flex; flex-direction:column; gap:12px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label for="new-profile-name">Nama/Alias Profil <span class="required">*</span></label>
+                  <input type="text" id="new-profile-name" required placeholder="Contoh: CS Utama / CS Blast Cadangan">
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 16px; font-size: 13px;">
+                  <i class="fas fa-save"></i> Daftarkan Profil Baru
+                </button>
+              </form>
+            </div>
+
+            <!-- Panel: Scan QR Code -->
+            <div class="panel glass" id="profile-qr-panel" style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 280px;">
+              <h2 id="qr-panel-title" style="color: var(--color-text); font-size: 15px; margin-bottom: 12px;">Pindai QR Code WhatsApp</h2>
+              <p id="qr-panel-instruction" style="font-size: 12.5px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.4;">
+                Pilih salah satu profil di sebelah kanan dan klik tombol **"Hubungkan"** untuk memunculkan kode QR di sini.
+              </p>
+              
+              <!-- QR Code Images states -->
+              <div id="profile-qr-box" style="display:none; flex-direction:column; align-items:center; gap:12px;">
+                <div class="qr-container" style="background: #fff; padding: 10px; border-radius: 8px;">
+                  <img id="profile-qr-image" src="" alt="WhatsApp QR Code" style="display:block; width:180px; height:180px;">
+                </div>
+                <div class="qr-timer" style="font-size:12px; color: var(--accent-secondary);">
+                  <i class="fas fa-sync-alt spin"></i> Menunggu Pemindaian QR...
+                </div>
+              </div>
+
+              <!-- Connecting spinner state -->
+              <div id="profile-connecting-box" style="display:none; flex-direction:column; align-items:center; gap:10px;">
+                <div class="loader-spinner"></div>
+                <span style="font-size: 13px; color: var(--color-text-muted);">Menyiapkan instansi browser Puppeteer...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side: Profiles list cards -->
+          <div class="panel glass" style="padding: 20px; display: flex; flex-direction: column;">
+            <h2 style="color: #fff; display: flex; align-items: center; gap: 8px; font-size: 16px; margin-bottom:15px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 10px;">
+              <i class="fas fa-list"></i> Daftar Akun/Profil Terdaftar
+            </h2>
+            <div id="profiles-list-container" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; max-height: 480px; padding-right: 5px;">
+              <!-- Dynamic profile cards will be loaded here -->
+              <div class="empty-state" style="font-size: 13px;">Belum ada profil WhatsApp terdaftar.</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+      
+      <!-- TAB 3: CAMPAIGN LIST -->
+      <section class="tab-content" id="tab-campaign-list">
+        <div class="panel glass">
+          <h2>Daftar Riwayat Kampanye Blast</h2>
+          <div class="campaign-table-container">
+            <table class="campaign-table">
+              <thead>
+                <tr>
+                  <th>Waktu Dibuat</th>
+                  <th>Nama Campaign</th>
+                  <th>Waktu Kirim</th>
+                  <th>Status</th>
+                  <th>Statistik Pengiriman</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="campaign-table-body">
+                <tr>
+                  <td colspan="6" class="empty-state">Belum ada campaign yang dijadwalkan.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: BOT AUTO-REPLY -->
+      <section class="tab-content" id="tab-bot-autoreply">
+        <!-- List Panel (Full Width) -->
+        <div class="panel glass">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px; flex-wrap: wrap; gap:12px;">
+            <h2 style="margin:0; color:#fff; display:flex; align-items:center; gap:10px;">
+              <i class="fas fa-robot" style="color:var(--accent-primary);"></i> CRM Bot Auto-Reply
+            </h2>
+            <button type="button" class="btn btn-primary btn-small" id="btn-open-autoreply-modal" style="background: var(--accent-primary); border-color: var(--accent-primary); padding: 8px 16px; font-weight:600;">
+              <i class="fas fa-plus"></i> Tambah Aturan Baru
+            </button>
+          </div>
+
+          <div class="campaign-table-container">
+            <table class="campaign-table">
+              <thead>
+                <tr>
+                  <th>Profil WA</th>
+                  <th>Kata Kunci</th>
+                  <th>Tipe</th>
+                  <th>Target Chat</th>
+                  <th>Teks Balasan</th>
+                  <th>Jeda (Detik)</th>
+                  <th>Status</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="bot-rules-table-body">
+                <tr>
+                  <td colspan="8" class="empty-state">Belum ada aturan balasan otomatis.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: RESPONS PELANGGAN -->
+      <section class="tab-content" id="tab-feedbacks-tab">
+        <div class="panel glass">
+          <h2 style="display:flex; align-items:center; gap:8px; color: #fff; margin-bottom: 10px;">
+            <i class="fas fa-comments" style="color:var(--accent-primary);"></i> Respon & Feedback Pelanggan Terkini
+          </h2>
+          <p style="font-size:13.5px; color:var(--color-text-muted); margin-bottom:20px; line-height:1.5;">
+            Daftar tanggapan masuk terbaru dari pelanggan yang menerima pesan blast A/B Testing Anda. Gunakan laporan ini untuk menganalisis efektivitas copywriting secara lebih mendalam.
+          </p>
+          <div class="campaign-table-container">
+            <table class="campaign-table" style="font-size:13px; width:100%;">
+              <thead>
+                <tr>
+                  <th>Waktu Balas</th>
+                  <th>Nama Pelanggan</th>
+                  <th>No. HP</th>
+                  <th>Campaign Blast</th>
+                  <th>Copywriting Terkirim</th>
+                  <th>Pesan Balasan Pelanggan</th>
+                </tr>
+              </thead>
+              <tbody id="feedback-table-body">
+                <tr>
+                  <td colspan="6" class="empty-state">Belum ada respon masuk dari pelanggan.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: REPORTS REKAP LAPORAN -->
+      <section class="tab-content" id="tab-reports">
+        <!-- Filter Toggle for Mass vs Individual and Period/Campaign Selection -->
+        <div style="display:flex; flex-direction:column; gap:16px; margin-bottom: 24px; background: rgba(0,0,0,0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--border-glass);">
+          <!-- Row 1: Report Type Switcher -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <span style="font-size:13.5px; font-weight:600; color:var(--color-text-muted);"><i class="fas fa-filter"></i> Saring Tipe Laporan:</span>
+            <div style="display:flex; gap:10px;">
+              <button type="button" class="btn btn-primary" id="btn-report-type-mass" style="padding: 6px 12px; font-size:12.5px; background: var(--accent-primary); border-color: var(--accent-primary);">
+                <i class="fas fa-bullhorn"></i> Campaign Massal (Broadcast)
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-report-type-individual" style="padding: 6px 12px; font-size:12.5px;">
+                <i class="fas fa-user-tag"></i> Blast Individu (Follow-up)
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Advanced filters (Period, Dates, Campaign dropdown) -->
+          <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.06); padding-top:16px;">
+            <!-- Period Selector -->
+            <div class="form-group" style="margin-bottom:0; flex:1; min-width:180px;">
+              <label style="font-size:12px; margin-bottom:6px; color:var(--color-text-muted);">Periode Waktu</label>
+              <select id="filter-report-period" class="form-control" style="padding: 8px 12px; font-size:13px; height:auto; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                <option value="all">Semua Waktu</option>
+                <option value="today">Hari Ini</option>
+                <option value="7days">7 Hari Terakhir</option>
+                <option value="30days">30 Hari Terakhir</option>
+                <option value="custom">Kustom Tanggal...</option>
+              </select>
+            </div>
+
+            <!-- Custom Date Inputs (hidden by default) -->
+            <div id="filter-report-custom-dates" style="display:none; align-items:center; gap:10px;">
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px; margin-bottom:6px; color:var(--color-text-muted);">Mulai</label>
+                <input type="date" id="filter-report-start-date" class="form-control" style="padding:6px 10px; font-size:13px; height:auto; width:140px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label style="font-size:12px; margin-bottom:6px; color:var(--color-text-muted);">Sampai</label>
+                <input type="date" id="filter-report-end-date" class="form-control" style="padding:6px 10px; font-size:13px; height:auto; width:140px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+              </div>
+            </div>
+
+            <!-- Campaign Selector -->
+            <div class="form-group" style="margin-bottom:0; flex:1.5; min-width:220px;">
+              <label style="font-size:12px; margin-bottom:6px; color:var(--color-text-muted);">Pilih Campaign</label>
+              <select id="filter-report-campaign" class="form-control" style="padding: 8px 12px; font-size:13px; height:auto; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+                <option value="all">Semua Campaign</option>
+              </select>
+            </div>
+
+            <!-- Terapkan Filter Button -->
+            <button type="button" class="btn btn-primary" id="btn-report-apply-filters" style="margin-top:18px; padding: 8px 16px; font-size:13px; align-self:flex-end;">
+              <i class="fas fa-check"></i> Terapkan
+            </button>
+          </div>
+        </div>
+
+        <!-- Global Summary Cards -->
+        <div class="stats-grid" style="margin-bottom: 24px;">
+          <div class="stat-card glass">
+            <div class="stat-icon" style="background: rgba(187, 134, 252, 0.15); color: #bb86fc;">
+              <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Total Campaign</span>
+              <h3 class="stat-value" id="rep-total-campaigns">0</h3>
+            </div>
+          </div>
+          <div class="stat-card glass">
+            <div class="stat-icon" style="background: rgba(3, 218, 198, 0.15); color: #03dac6;">
+              <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Total Sent</span>
+              <h3 class="stat-value" id="rep-total-sent">0</h3>
+            </div>
+          </div>
+          <div class="stat-card glass">
+            <div class="stat-icon" style="background: rgba(3, 218, 198, 0.15); color: #03dac6;">
+              <i class="fas fa-check-double"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Delivery Rate (Keterkiriman)</span>
+              <h3 class="stat-value" id="rep-read-rate">0%</h3>
+              <small class="stat-sub" id="rep-read-count" style="color:var(--color-text-muted);">0 pesan mendarat</small>
+            </div>
+          </div>
+          <div class="stat-card glass">
+            <div class="stat-icon" style="background: rgba(124, 77, 255, 0.15); color: var(--accent-primary);">
+              <i class="fas fa-comments"></i>
+            </div>
+            <div class="stat-details">
+              <span class="stat-label">Reply Rate (Dibalas)</span>
+              <h3 class="stat-value" id="rep-reply-rate">0%</h3>
+              <small class="stat-sub" id="rep-reply-count" style="color:var(--color-text-muted);">0 pesan</small>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <!-- Campaign summary table panel -->
+          <div class="panel glass">
+            <h2 style="display:flex; align-items:center; gap:8px; color: #fff;">
+              <i class="fas fa-chart-pie" style="color:var(--accent-primary);"></i> Analisis & Rekap Performa Campaign Blast
+            </h2>
+            <div class="campaign-table-container">
+              <table class="campaign-table">
+                <thead>
+                  <tr>
+                    <th>Nama Campaign</th>
+                    <th>Jadwal Kirim</th>
+                    <th>Kontak</th>
+                    <th>Selesai Kirim</th>
+                    <th>Delivery Rate (Keterkiriman)</th>
+                    <th>Reply Rate (Dibalas)</th>
+                    <th>Copywriting Paling Efektif</th>
+                    <th>Skor Blast</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-campaigns-table-body">
+                  <tr>
+                    <td colspan="8" class="empty-state">Memuat data analisis...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Copywriting template leaderboard panel -->
+          <div class="panel glass">
+            <h2 style="display:flex; align-items:center; gap:8px; color: #fff;">
+              <i class="fas fa-medal" style="color:var(--accent-secondary);"></i> Leaderboard Copywriting Ter-Efektif (Global)
+            </h2>
+            <div class="campaign-table-container">
+              <table class="campaign-table">
+                <thead>
+                  <tr>
+                    <th>Isi Copywriting Template</th>
+                    <th>Total Kirim</th>
+                    <th>Delivery Rate (Keterkiriman)</th>
+                    <th>Reply Rate (Dibalas)</th>
+                    <th>Status Efektifitas</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-templates-table-body">
+                  <tr>
+                    <td colspan="5" class="empty-state">Memuat data leaderboard...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: SETTINGS -->
+      <section class="tab-content" id="tab-settings-tab">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px; max-width: 100%; width: 100%; align-items: start;">
+          
+          <!-- LEFT COLUMN: App Configuration & Seeding -->
+          <div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
+            
+            <!-- APP CONFIGURATION PANEL -->
+            <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 20px; box-sizing: border-box; width: 100%;">
+              <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-cog"></i> Pengaturan Aplikasi
+              </h2>
+              
+              <div class="form-group" style="margin-bottom: 0;">
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--color-text);">Jalankan Otomatis (Autostart)</h3>
+                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5;">
+                  Aktifkan opsi ini agar server WhatsApp Blast otomatis berjalan di latar belakang setiap kali komputer Anda dinyalakan.
+                </p>
+                <!-- Premium Switch Toggle -->
+                <label class="switch-container" for="setting-autostart-toggle" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); padding: 12px 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                  <div class="switch-label-area" style="display: flex; flex-direction: column; gap: 2px;">
+                    <span class="switch-label-title" style="font-size: 13px; font-weight: 500; color: #fff;">Jalankan otomatis saat komputer dinyalakan</span>
+                    <span class="switch-label-desc" style="font-size: 11px; color: var(--color-text-muted);">Aktifkan untuk menambahkan ke folder Windows Startup</span>
+                  </div>
+                  <div class="switch-control">
+                    <input type="checkbox" id="setting-autostart-toggle">
+                    <span class="switch-slider"></span>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+                <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--color-text);">Mode Fokus Gen-Z (Dimming)</h3>
+                <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 15px; line-height: 1.5;">
+                  Meredupkan balon chat wawancara dan kartu follow-up pasif untuk mereduksi distraksi visual serta meningkatkan fokus membaca.
+                </p>
+                <!-- Premium Switch Toggle -->
+                <label class="switch-container" for="setting-focusmode-toggle" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); padding: 12px 16px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                  <div class="switch-label-area" style="display: flex; flex-direction: column; gap: 2px;">
+                    <span class="switch-label-title" style="font-size: 13px; font-weight: 500; color: #fff;">Aktifkan Mode Fokus Gen-Z</span>
+                    <span class="switch-label-desc" style="font-size: 11px; color: var(--color-text-muted);">Meredupkan elemen pasif di chat & follow-up</span>
+                  </div>
+                  <div class="switch-control">
+                    <input type="checkbox" id="setting-focusmode-toggle" checked>
+                    <span class="switch-slider"></span>
+                  </div>
+                </label>
+              </div>
+              
+              <div class="info-alert" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); padding: 15px; font-size: 12.5px; color: #fff; line-height: 1.6; margin-bottom: 10px;">
+                <strong>💡 Informasi Cara Kerja:</strong><br>
+                Fitur ini membuat shortcut ke launcher <code>Launcher.exe</code> di folder startup Windows (shell:startup) agar server dan dashboard terbuka otomatis saat booting.
+              </div>
+  
+              <!-- Dummy Seeding / Database Management Section -->
+              <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+                <h3 style="font-size: 15px; font-weight: 600; color: var(--color-text); margin: 0;">Data Uji Coba (Database Sandbox)</h3>
+                <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
+                  Populasikan database dengan data dummy profesional (riwayat rekap campaign, grafik performa, dan pesan masuk pelanggan) untuk menguji seluruh fitur dashboard secara instan.
+                </p>
+                <div style="display: flex; gap: 12px; margin-top: 5px;">
+                  <button type="button" class="btn btn-primary" id="btn-seed-dummy" style="padding: 10px 16px; font-size: 13px; background: #0284c7 !important; border-color: #0284c7 !important; color: #fff !important; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-database"></i> Isi Data Dummy
+                  </button>
+                  <button type="button" class="btn btn-danger" id="btn-reset-dummy" style="padding: 10px 16px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-trash-alt"></i> Reset Database
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- LICENSE DETAIL PANEL -->
+            <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; width: 100%;">
+              <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-id-card"></i> Informasi Lisensi & Perangkat
+              </h2>
+              <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
+                Detail informasi lisensi dan identitas perangkat keras (HWID) komputer Anda yang terdaftar pada sistem verifikasi pusat.
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                  <span style="font-size: 13px; color: var(--color-text-muted);">Status Lisensi:</span>
+                  <span id="license-detail-status" style="font-size: 12.5px; font-weight: 600; color: var(--accent-primary); background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 2px 10px; border-radius: 20px;">Memuat...</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                  <span style="font-size: 13px; color: var(--color-text-muted);">License Key:</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="license-detail-key" style="font-family: monospace; font-size: 13px; letter-spacing: 1px; color: #fff; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">••••••••••••••••</span>
+                    <button type="button" id="btn-toggle-license-visibility" style="background: none; border: none; color: var(--accent-primary); cursor: pointer; padding: 5px; font-size: 14px; display: none;">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                  <span style="font-size: 13px; color: var(--color-text-muted);">Masa Berlaku s.d:</span>
+                  <span id="license-detail-expiry" style="font-size: 13px; font-weight: 600; color: #fff;">Memuat...</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                  <span style="font-size: 13px; color: var(--color-text-muted);">Perangkat Terdaftar:</span>
+                  <span id="license-detail-devices" style="font-size: 13px; font-weight: 600; color: #fff;">Memuat...</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px;">
+                  <span style="font-size: 13px; color: var(--color-text-muted);">Hardware ID (HWID):</span>
+                  <span id="license-detail-hwid" style="font-family: monospace; font-size: 12px; color: #ccc; background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">Memuat...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- RIGHT COLUMN: AI Copywriter Configuration -->
+          <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 20px;">
+            <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-magic"></i> Konfigurasi AI Copywriter
+            </h2>
+            <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
+              Pilih engine AI default yang ingin digunakan oleh generator copywriting Anda, lalu lengkapi detail API key-nya.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Dropdown AI Engine -->
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="settings-ai-provider">Pilih Engine AI</label>
+                <select id="settings-ai-provider" style="font-size: 13px; padding: 10px; height: auto; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: 6px; width: 100%;">
+                  <option value="gemini">Google Gemini (Gratis / Rotasi Multi-Key)</option>
+                  <option value="openai">OpenAI (ChatGPT)</option>
+                  <option value="claude">Anthropic Claude</option>
+                  <option value="deepseek">DeepSeek AI</option>
+                  <option value="custom">Custom API URL (OpenAI Compatible)</option>
+                </select>
+              </div>
+
+              <!-- Gemini config section -->
+              <div id="config-ai-gemini" class="config-ai-panel" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px; color: var(--color-text);">Gemini API Keys <span class="required">*</span></label>
+                  <div id="gemini-keys-list-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                    <!-- Rows will be injected by JS -->
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-small" id="btn-add-gemini-key-row" style="padding: 8px 12px; font-size: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;">
+                    <i class="fas fa-plus"></i> Tambah API Key Lain
+                  </button>
+                </div>
+                
+                <!-- Hidden model selection with automated label for non-technical users -->
+                <div class="form-group" style="margin-bottom: 0; display: none;">
+                  <select id="settings-gemini-model">
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                  </select>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
+                  <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> Gemini 2.5 Flash</strong> (Otomatis & Direkomendasikan)
+                  </p>
+                </div>
+                <span class="helper-info" style="font-size: 12px; color: var(--color-text-muted); line-height: 1.4;">
+                  Sistem otomatis merotasi kunci (failover) dari atas ke bawah jika salah satu kunci terkena limit quota (error 429). Dapatkan kunci gratis di 
+                  <a href="https://aistudio.google.com/" target="_blank" style="color: var(--accent-primary); font-weight: 600; text-decoration: underline;">Google AI Studio</a>.
+                </span>
+              </div>
+
+              <!-- OpenAI config section -->
+              <div id="config-ai-openai" class="config-ai-panel" style="display: none; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-openai-key">OpenAI API Key <span class="required">*</span></label>
+                  <input type="password" id="settings-openai-key" style="font-size: 13px; padding: 10px;" placeholder="sk-...">
+                </div>
+                <!-- Hidden model select, auto selected -->
+                <div class="form-group" style="margin-bottom: 0; display: none;">
+                  <select id="settings-openai-model">
+                    <option value="gpt-4o-mini" selected>GPT-4o Mini</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                  </select>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
+                  <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> GPT-4o Mini</strong> (Otomatis & Direkomendasikan)
+                  </p>
+                </div>
+              </div>
+
+              <!-- Claude config section -->
+              <div id="config-ai-claude" class="config-ai-panel" style="display: none; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-claude-key">Anthropic Claude API Key <span class="required">*</span></label>
+                  <input type="password" id="settings-claude-key" style="font-size: 13px; padding: 10px;" placeholder="sk-ant-...">
+                </div>
+                <!-- Hidden model select, auto selected -->
+                <div class="form-group" style="margin-bottom: 0; display: none;">
+                  <select id="settings-claude-model">
+                    <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet</option>
+                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                  </select>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
+                  <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> Claude 3.5 Sonnet</strong> (Otomatis & Direkomendasikan)
+                  </p>
+                </div>
+              </div>
+
+              <!-- DeepSeek config section -->
+              <div id="config-ai-deepseek" class="config-ai-panel" style="display: none; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-deepseek-key">DeepSeek API Key <span class="required">*</span></label>
+                  <input type="password" id="settings-deepseek-key" style="font-size: 13px; padding: 10px;" placeholder="sk-...">
+                </div>
+                <!-- Hidden model select, auto selected -->
+                <div class="form-group" style="margin-bottom: 0; display: none;">
+                  <select id="settings-deepseek-model">
+                    <option value="deepseek-chat" selected>DeepSeek Chat</option>
+                  </select>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
+                  <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
+                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> DeepSeek Chat (V3)</strong> (Otomatis & Direkomendasikan)
+                  </p>
+                </div>
+              </div>
+
+              <!-- Custom API config section -->
+              <div id="config-ai-custom" class="config-ai-panel" style="display: none; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-custom-url">Custom API Base URL <span class="required">*</span></label>
+                  <input type="text" id="settings-custom-url" style="font-size: 13px; padding: 10px;" placeholder="Contoh: https://api.together.xyz/v1">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-custom-key">Custom API Key (Jika Butuh)</label>
+                  <input type="password" id="settings-custom-key" style="font-size: 13px; padding: 10px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="settings-custom-model">Nama Model Custom <span class="required">*</span></label>
+                  <input type="text" id="settings-custom-model" style="font-size: 13px; padding: 10px;" placeholder="Contoh: meta-llama/Llama-3-8b-chat">
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-primary" id="btn-save-ai-settings" style="padding: 10px 16px; font-size: 13px; align-self: flex-start; background: var(--accent-primary); border-color: var(--accent-primary); margin-top: 10px;">
+                <i class="fas fa-save"></i> Simpan Pengaturan AI
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+  </div>
+  
+  <!-- Campaign Detail Modal -->
+  <div class="modal" id="campaign-detail-modal">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h2 id="modal-campaign-title">Detail Campaign</h2>
+        <span class="close-modal-btn" id="close-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info-grid">
+          <div><strong>Status:</strong> <span id="modal-status-badge">Memuat...</span></div>
+          <div><strong>Waktu Kirim:</strong> <span id="modal-scheduled-time">Memuat...</span></div>
+          <div class="full-width"><strong>Template Pesan:</strong> <pre id="modal-message-template" class="code-pre"></pre></div>
+        </div>
+        
+        <!-- A/B Testing Statistics Section -->
+        <div id="modal-ab-stats-section" style="display:none; margin-bottom: 25px; border-bottom: 1px solid var(--border-glass); padding-bottom: 20px; margin-top: 20px;">
+          <h3 style="margin-bottom:12px; display:flex; align-items:center; gap:8px; font-size:15px; color:#fff;">
+            <i class="fas fa-chart-line" style="color:var(--accent-primary);"></i> Statistik Efektivitas A/B Testing (Copywriting)
+          </h3>
+          <div class="campaign-table-container">
+            <table class="campaign-table" style="font-size:12.5px; width: 100%;">
+              <thead>
+                <tr>
+                  <th>Variasi Pesan</th>
+                  <th>Bobot</th>
+                  <th>Total Sent</th>
+                  <th>Read Rate (Centang Biru)</th>
+                  <th>Reply Rate (Dibalas)</th>
+                  <th>Status Keusangan</th>
+                </tr>
+              </thead>
+              <tbody id="modal-ab-stats-table-body">
+                <!-- Seeded dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>Kontak & Status Pengiriman</h3>
+        <div class="modal-table-container">
+          <table class="modal-log-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama</th>
+                <th>No. HP</th>
+                <th>Status</th>
+                <th>Feedback/Balasan</th>
+                <th>Waktu Kirim</th>
+                <th>Detail Error / Pesan</th>
+              </tr>
+            </thead>
+            <tbody id="modal-log-table-body">
+              <tr>
+                <td colspan="7" class="empty-state">Memuat detail pengiriman...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Follow-up Preview Modal -->
+  <div class="modal" id="followup-preview-modal">
+    <div class="modal-content glass" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Pratinjau Pesan Follow-up</h2>
+        <span class="close-modal-btn" id="close-preview-modal">&times;</span>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 15px;">
+        <div style="margin-bottom: 15px; font-size: 14px; color: var(--color-text);">
+          <div><strong>Penerima:</strong> <span id="preview-recipient-name">Pak Rangga</span> (<span id="preview-recipient-phone">08123456789</span>)</div>
+        </div>
+        
+        <!-- List container for simulated whatsapp chat bubbles -->
+        <div id="preview-chat-container" style="display: flex; flex-direction: column; gap: 15px; background: rgba(10, 15, 20, 0.4); padding: 15px; border-radius: 12px; border: 1px solid var(--border-glass);">
+          <!-- Dynamic chat bubbles go here -->
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 15px; border-top: 1px solid var(--border-glass); margin-top: 15px;">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-send">Batal</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-send" style="background: var(--accent-primary); border-color: var(--accent-primary);">
+          <i class="fas fa-check"></i> Ya, Kirim & Jadwalkan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Scheduled Time Modal -->
+  <div class="modal" id="edit-time-modal">
+    <div class="modal-content glass" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>Ubah Waktu Pengiriman</h2>
+        <span class="close-modal-btn" id="close-edit-time-modal">&times;</span>
+      </div>
+      <div class="modal-body" style="padding: 15px;">
+        <div class="form-group">
+          <label for="new-scheduled-time">Waktu Pengiriman Baru <span class="required">*</span></label>
+          <input type="datetime-local" id="new-scheduled-time" required>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; padding: 15px; border-top: 1px solid var(--border-glass); margin-top: 15px;">
+        <button type="button" class="btn btn-secondary" id="btn-cancel-edit-time">Batal</button>
+        <button type="button" class="btn btn-primary" id="btn-save-edit-time" style="background: var(--accent-primary); border-color: var(--accent-primary);">
+          <i class="fas fa-save"></i> Simpan Perubahan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LICENSE LOCK SCREEN OVERLAY -->
+  <div id="license-lock-screen" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(10, 10, 16, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 999999; display: none; align-items: center; justify-content: center; padding: 20px;">
+    <div class="panel glass" style="max-width: 500px; width: 100%; padding: 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center; display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Brand Logo / Header -->
+      <div>
+        <div style="width: 70px; height: 70px; background: rgba(139, 92, 246, 0.15); border: 2px solid var(--accent-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: var(--accent-primary); font-size: 32px; box-shadow: 0 0 20px rgba(139, 92, 246, 0.25);">
+          <i class="fas fa-shield-halved"></i>
+        </div>
+        <h2 style="font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px;">Aktivasi Lisensi Diperlukan</h2>
+        <p style="font-size: 14px; color: var(--color-text-muted); line-height: 1.5; margin: 0 10px;">
+          Silakan masukkan License Key pembelian Anda untuk membuka dan mengaktifkan seluruh fitur dashboard WA Blast.
+        </p>
+      </div>
+
+      <!-- Form Inputs -->
+      <form id="license-activation-form" style="display: flex; flex-direction: column; gap: 15px; text-align: left;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="license-key-input" style="font-size: 13.5px; font-weight: 600; color: #ccc; display: block; margin-bottom: 6px;">License Key <span class="required">*</span></label>
+          <input type="text" id="license-key-input" required placeholder="Contoh: WA-BLAST-XXXX-YYYY-ZZZZ" style="width: 100%; padding: 12px 16px; font-size: 15px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff;">
+        </div>
+
+        <!-- Hardware ID info box -->
+        <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.04); padding: 12px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--color-text-muted); display: flex; justify-content: space-between; align-items: center;">
+          <span>HWID PC Anda:</span>
+          <span id="license-hwid-display" style="color: var(--accent-secondary); font-weight: 500;">Mencari...</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="btn-activate-license" style="width: 100%; padding: 12px; font-size: 14.5px; background: var(--accent-primary); border-color: var(--accent-primary); border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;">
+          <i class="fas fa-key"></i> Aktifkan Lisensi Sekarang
+        </button>
+      </form>
+
+      <!-- Feedback / Error messages -->
+      <div id="license-feedback-message" style="display: none; padding: 12px; border-radius: 8px; font-size: 13.5px; line-height: 1.4; text-align: left;"></div>
+      
+      <!-- Footer Info -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px; font-size: 12px; color: var(--color-text-muted); line-height: 1.4;">
+        Lisensi ini dikunci berdasarkan Hardware ID komputer Anda sesuai paket perangkat yang Anda beli. Butuh bantuan? Hubungi CS / Developer Anda.
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- AI COPYWRITING GENERATOR POPUP MODAL -->
+  <div class="modal" id="ai-generator-modal">
+    <div class="modal-content glass" style="max-width: 960px; width: 90%;">
+      <div class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px; font-size: 17px; margin: 0; color: #fff;">
+          <i class="fas fa-magic" style="color: var(--accent-primary);"></i> AI Copywriting Generator
+        </h2>
+        <div style="display: flex; align-items: center; gap: 15px; margin-right: 15px;">
+          <span class="badge completed" id="ai-engine-badge" style="font-size: 11px; padding: 3px 8px; background: rgba(3, 218, 198, 0.12); color: #03dac6; border: 1px solid rgba(3, 218, 198, 0.25);">
+            <i class="fas fa-bolt"></i> Engine: Load...
+          </span>
+        </div>
+        <span class="close-modal-btn" id="close-ai-generator-modal" style="font-size: 24px; cursor: pointer;">&times;</span>
+      </div>
+      
+      <div class="modal-body" style="padding: 20px; max-height: 80vh; overflow-y: auto;">
+        <!-- Warning Notice if API Key is not set -->
+        <div id="gemini-key-warning" style="display: none; background: rgba(220,53,69,0.12); border: 1px solid rgba(220,53,69,0.25); padding: 12px; border-radius: 8px; font-size: 12.5px; color: #fff; line-height: 1.5; margin-bottom: 20px;">
+          <span style="color: #ef4444; font-weight: 600; display: block; margin-bottom: 4px;">
+            <i class="fas fa-exclamation-triangle"></i> AI Key Belum Diset
+          </span>
+          Silakan masukkan API Key Anda di menu **Pengaturan** terlebih dahulu untuk mengaktifkan generator AI.
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.4fr 0.6fr; gap: 24px; align-items: start;">
+          <!-- LEFT SIDE: Mode Switcher & Content Containers -->
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <!-- Mode Switcher -->
+            <div style="display: flex; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); padding: 4px; border-radius: 10px;">
+              <button type="button" class="btn btn-primary" id="btn-copywrite-mode-interview" style="flex: 1; padding: 8px 10px; font-size: 12.5px; background: var(--accent-primary); border-color: var(--accent-primary); border-radius: 8px; color: #050505; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                <i class="fas fa-comments"></i> AI Interview (Tanya-Jawab)
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-copywrite-mode-form" style="flex: 1; padding: 8px 10px; font-size: 12.5px; background: transparent; border-color: transparent; border-radius: 8px; color: #a3a3a3; font-weight: 500; cursor: pointer; transition: all 0.2s ease;">
+                <i class="fas fa-edit"></i> Formulir Instan
+              </button>
+            </div>
+
+            <!-- Mode 1: Instant Form Container -->
+            <div id="copywrite-container-form" style="display: none; flex-direction: column; gap: 12px;">
+              <form id="form-ai-generator" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="ai-business-details" style="font-size: 12.5px;">Detail Produk / Bisnis <span class="required">*</span></label>
+                  <textarea id="ai-business-details" rows="3" style="font-size: 13px; padding: 10px 12px;" placeholder="Contoh: Jual gamis ramadhan bahan sutra premium" required></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="ai-promo-details" style="font-size: 12.5px;">Promo / Penawaran Spesial <span class="required">*</span></label>
+                  <textarea id="ai-promo-details" rows="3" style="font-size: 13px; padding: 10px 12px;" placeholder="Contoh: Diskon 50% khusus hari ini saja" required></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="ai-message-tone" style="font-size: 12.5px;">Gaya Bahasa (Tone)</label>
+                    <select id="ai-message-tone" style="font-size: 13px; padding: 8px 10px; height: auto; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 6px; width: 100%;">
+                      <option value="casual">Casual & Santai</option>
+                      <option value="formal">Professional & Formal</option>
+                      <option value="urgent">Urgent & FOMO (Hard Sell)</option>
+                      <option value="storytelling">Soft Sell (Storytelling)</option>
+                      <option value="humorous">Humoris & Lucu</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="ai-message-cta" style="font-size: 12.5px;">Call to Action (CTA) <span style="font-size: 10px; color: var(--color-text-muted);">*Ajakan Tindakan</span></label>
+                    <input type="text" id="ai-message-cta" style="font-size: 13px; padding: 10px 12px;" placeholder="Contoh: Klik link wa.me/xxx">
+                  </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px;">
+                  <label class="checkbox-container" style="font-size: 13px; font-weight: 500; margin: 0;">
+                    <input type="checkbox" id="ai-use-emoji" checked> Gunakan Emoji
+                  </label>
+                  <button type="submit" class="btn btn-primary" id="btn-generate-copywriting" style="padding: 10px 20px; font-size: 13px; border-radius: 6px; display: flex; align-items: center; gap: 8px; background: var(--accent-primary); border-color: var(--accent-primary);">
+                    <i class="fas fa-magic"></i> Generate Copywriting
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Mode 2: AI Interview Container -->
+            <div id="copywrite-container-interview" style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
+              <div id="copywrite-interview-chat" style="height: 300px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; max-height: 320px; box-sizing: border-box;">
+                <!-- Chat bubbles populated dynamically via JS -->
+              </div>
+              
+              <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <input type="text" id="copywrite-interview-input" style="flex: 1; font-size: 13px; padding: 10px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #fff; box-sizing: border-box;" placeholder="Ketik jawaban Anda di sini...">
+                <button type="button" class="btn btn-primary" id="btn-copywrite-interview-send" style="padding: 10px 16px; font-size: 13px; background: var(--accent-primary); border-color: var(--accent-primary); cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px;">
+                <button type="button" class="btn btn-secondary btn-small" id="btn-copywrite-interview-reset" style="padding: 8px 12px; font-size: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; cursor: pointer; border-radius: 6px;">
+                  <i class="fas fa-redo"></i> Reset Wawancara
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-copywrite-interview-generate" style="padding: 10px 20px; font-size: 13px; background: #8b5cf6 !important; border-color: #8b5cf6 !important; display: none; align-items: center; gap: 8px; cursor: pointer; border-radius: 6px; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);">
+                  <i class="fas fa-wand-magic-sparkles"></i> Buat Copywriting!
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT SIDE: Output & Variation controls -->
+          <div style="display: flex; flex-direction: column; gap: 15px; height: 100%;">
+            <div style="display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 290px;">
+              <label style="font-size: 13px; font-weight: 600; color: var(--accent-secondary); display: flex; align-items: center; gap: 6px; margin: 0;">
+                <i class="fas fa-file-alt"></i> Hasil Generate Copywriting
+              </label>
+              <textarea id="ai-copywriting-output" readonly style="flex: 1; font-family: 'Outfit', sans-serif; font-size: 13px; line-height: 1.5; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #fff; resize: none; min-height: 210px;" placeholder="Hasil tulisan AI akan muncul di sini..."></textarea>
+            </div>
+
+            <!-- Generate Variation Button -->
+            <button type="button" class="btn btn-secondary" id="btn-generate-variation" style="padding: 10px; font-size: 13px; border-radius: 6px; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.25); color: #c084fc; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
+              <i class="fas fa-wand-magic-sparkles"></i> ✨ Buat Variasi Baru Dari Pesan Ini
+            </button>
+
+            <!-- Apply Buttons Wrapper -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px; margin-top: 5px;">
+              <label style="font-size: 12.5px; font-weight: 600; color: #ccc; display: block; margin-bottom: 8px;">Terapkan ke Pesan / Variasi:</label>
+              <div id="ai-apply-buttons-wrapper" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size: 12px; color: var(--color-text-muted);">Silakan generate pesan terlebih dahulu.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- CRM Bot Auto-Reply Modal -->
+  <div class="modal" id="autoreply-modal">
+    <div class="modal-content glass" style="max-width: 800px; width: 90%;">
+      <div class="modal-header">
+        <h2>Tambah Aturan Auto-Reply Baru</h2>
+        <span class="close-modal-btn" id="close-autoreply-modal">&times;</span>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <form id="form-add-autoreply">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+            <!-- LEFT COLUMN: Auto-Reply Rule Settings -->
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="bot-profile-select">Ditujukan Untuk Profil WhatsApp <span class="required">*</span></label>
+                <select id="bot-profile-select" required>
+                  <option value="all">Semua Profil WhatsApp</option>
+                  <!-- Populated dynamically via JS -->
+                </select>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="bot-keyword">Kata Kunci / Trigger <span class="required">*</span></label>
+                <input type="text" id="bot-keyword" required placeholder="Contoh: info, daftar, promo, atau regex pattern">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="switch-container" for="bot-is-regex" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); padding: 10px 14px; border-radius: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;">
+                  <div class="switch-label-area" style="display: flex; flex-direction: column; gap: 2px;">
+                    <span class="switch-label-title" style="font-size: 13px; font-weight: 500; color: #fff;">Gunakan Regex (Regular Expression)</span>
+                    <span class="switch-label-desc" style="font-size: 11px; color: var(--color-text-muted);">Aktifkan pencocokan pola tingkat lanjut</span>
+                  </div>
+                  <div class="switch-control">
+                    <input type="checkbox" id="bot-is-regex">
+                    <span class="switch-slider"></span>
+                  </div>
+                </label>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="bot-target-type">Target Chat Bot <span class="required">*</span></label>
+                <select id="bot-target-type" required>
+                  <option value="all">Semua Chat (Personal & Grup)</option>
+                  <option value="personal">Hanya Chat Personal (Private Chat)</option>
+                  <option value="groups">Hanya Grup WhatsApp Tertentu</option>
+                </select>
+              </div>
+
+              <!-- Container for selecting specific groups, hidden by default -->
+              <div class="form-group" id="bot-groups-selector-area" style="display:none; border:1px solid rgba(255,255,255,0.08); padding:15px; border-radius:12px; background:rgba(0,0,0,0.15); margin-bottom: 0;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <label style="font-size:13px; font-weight:600; color:var(--accent-primary);">Pilih Grup WhatsApp Target</label>
+                  <button type="button" class="btn btn-secondary btn-small" id="btn-refresh-bot-groups" style="padding:4px 8px;">
+                    <i class="fas fa-sync-alt"></i> Muat Ulang
+                  </button>
+                </div>
+                <input type="text" id="bot-groups-search" placeholder="Cari nama grup..." style="margin-bottom:10px; padding:8px 12px; font-size:13px; border-radius:8px; background:rgba(0,0,0,0.25);">
+                <div id="bot-groups-checkbox-list" style="max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:5px;">
+                  <span class="empty-state" style="font-size:12px; color:var(--color-text-muted);">Klik 'Muat Ulang Grup' untuk membaca daftar grup WhatsApp.</span>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-bottom: 0;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="bot-delay-min">Jeda Min (Detik)</label>
+                  <input type="number" id="bot-delay-min" min="1" max="120" value="2" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label for="bot-delay-max">Jeda Max (Detik)</label>
+                  <input type="number" id="bot-delay-max" min="1" max="120" value="5" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Message Autoreply Text Area -->
+            <div style="display: flex; flex-direction: column; gap: 10px; height: 100%;">
+              <div class="form-group" style="margin-bottom: 0; display: flex; flex-direction: column; height: 100%;">
+                <label for="bot-reply-text">Teks Balasan Bot <span class="required">*</span></label>
+                <textarea id="bot-reply-text" required style="font-size: 13.5px; line-height: 1.5; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #fff; resize: vertical; min-height: 295px; width: 100%; box-sizing: border-box;" placeholder="Tulis balasan otomatis bot di sini... Gunakan {Nama} atau {Nomor} untuk menyapa secara personal."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; display:flex; justify-content:flex-end; gap:12px;">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-autoreply" style="padding: 10px 20px;">Batal</button>
+            <button type="submit" class="btn btn-primary" style="background: var(--accent-primary); border-color: var(--accent-primary); padding: 10px 20px; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-save"></i> Simpan Aturan Bot
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- PapaParse CSV Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- Custom JS -->
+  <script src="app.js"></script>
+</body>
+</html>
