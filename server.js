@@ -7,7 +7,7 @@ const os = require('os');
 const qrcode = require('qrcode');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 
-const { connectDB, WAProfile, Campaign, MessageLog, AutoReply, Setting } = require('./db');
+const { connectDB, WAProfile, Campaign, MessageLog, AutoReply, Setting, FollowUpProgram } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -207,6 +207,17 @@ async function validateLicenseOnline(licenseKey) {
           { upsert: true }
         );
       }
+      if (data.maxProfiles !== undefined) {
+        await Setting.findOneAndUpdate(
+          { key: 'licenseMaxProfiles' },
+          { value: data.maxProfiles.toString() },
+          { upsert: true }
+        );
+      }
+    }
+    if (data.success === false) {
+      console.log(`[License Guard] Online validation failed: ${data.message}`);
+      return false;
     }
     return data.success;
   } catch (e) {
@@ -219,9 +230,35 @@ async function validateLicenseOnline(licenseKey) {
     } catch (dbErr) {
       console.error('Failed to load cached expiry date:', dbErr.message);
     }
-    return true; // Fallback to true if network/Google Sheets is down/offline
+    const cachedKey = await Setting.findOne({ key: 'licenseKey' });
+    return !!cachedKey;
   }
 }
+
+// Periodic License Safeguard: Re-verify online status every 15 minutes
+setInterval(async () => {
+  try {
+    const keySetting = await Setting.findOne({ key: 'licenseKey' });
+    if (keySetting && keySetting.value) {
+      const isValid = await validateLicenseOnline(keySetting.value);
+      if (!isValid) {
+        console.log('⚠️ [License Guard] Lisensi tidak lagi valid di Google Sheets. Menonaktifkan akses aplikasi...');
+        isLicenseActive = false;
+        
+        // Emit SSE event to kick user to license activation modal
+        broadcastSSE({
+          type: 'license-revoked',
+          reason: '🛡️ Lisensi Anda telah dinonaktifkan, dihapus, atau kedaluwarsa oleh Admin. Akses aplikasi dihentikan.'
+        });
+      } else {
+        isLicenseActive = true;
+      }
+    }
+  } catch (err) {
+    console.error('Error in periodic license safeguard:', err.message);
+  }
+}, 15 * 60 * 1000);
+
 // Legacy global fallbacks to prevent ReferenceErrors
 let connectionState = 'disconnected';
 let qrData = null;
@@ -319,10 +356,18 @@ async function connectToWhatsApp(profileId) {
       return;
     }
 
-    // Check if already active
+    // Check if already active & clean up stale client instances if reconnecting
     if (clients.has(profileId)) {
-      console.log(`WhatsApp profile ${profileId} is already connecting/connected.`);
-      return;
+      const existingClient = clients.get(profileId);
+      if (existingClient && profile.status === 'connected') {
+        console.log(`WhatsApp profile ${profileId} is already connected.`);
+        return;
+      }
+      try {
+        console.log(`Destroying stale client instance for profile ${profileId} to start clean reconnection...`);
+        await existingClient.destroy();
+      } catch (e) {}
+      clients.delete(profileId);
     }
 
     profile.status = 'connecting';
@@ -357,16 +402,26 @@ async function connectToWhatsApp(profileId) {
     if (chromePath) {
       puppeteerOptions.executablePath = chromePath;
     }
+    // Clean up SingletonLock to prevent Puppeteer session locks on crashes/restarts
+    const lockPath = path.join(sessionDir, '.wwebjs_auth', `session-profile_${profileId}`, 'SingletonLock');
+    if (fs.existsSync(lockPath)) {
+      try {
+        fs.unlinkSync(lockPath);
+        console.log(`[Session Guard] Cleaned up SingletonLock for ${profileId}`);
+      } catch (err) {
+        console.log(`[Session Guard] SingletonLock for ${profileId} is currently locked by a running process.`);
+      }
+    }
 
     const clientInstance = new Client({
       authStrategy: new LocalAuth({
         clientId: `profile_${profileId}`,
         dataPath: sessionDir
       }),
-      webVersionCache: {
+      /* webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
-      },
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1017054665.html'
+      }, */
       puppeteer: puppeteerOptions
     });
 
@@ -438,32 +493,86 @@ async function connectToWhatsApp(profileId) {
     });
 
     clientInstance.on('message', async (msg) => {
+      console.log(`[Incoming Message] Received message from ${msg.from}. Body: ${msg.body ? msg.body.substring(0, 60) : ''}`);
       if (!msg.body) return;
 
       const incomingText = msg.body.trim().toLowerCase();
       const senderJid = msg.from;
-      const cleanPhone = senderJid.replace('@c.us', '').replace('@g.us', '');
       const isGroupMsg = msg.isGroup || senderJid.endsWith('@g.us');
+      
+      let cleanPhone = senderJid.replace('@c.us', '').replace('@g.us', '');
+      try {
+        const contact = await msg.getContact();
+        if (contact && contact.number) {
+          cleanPhone = contact.number;
+        }
+        
+        // Resolve LID to real phone number via Puppeteer if needed
+        if (senderJid.endsWith('@lid')) {
+          const clientInstance = clients.get(profileId);
+          if (clientInstance && clientInstance.pupPage) {
+            const realPhone = await clientInstance.pupPage.evaluate((lid) => {
+              try {
+                const widFactory = window.require('WAWebWidFactory');
+                const wid = widFactory.createWidFromWidLike(lid);
+                if (wid && wid.isLid()) {
+                  const alt = window.require('WAWebApiContact').getAlternateUserWid(wid);
+                  if (alt) {
+                    return alt.user || (alt._serialized ? alt._serialized.split('@')[0] : null);
+                  }
+                }
+              } catch (e) {}
+              return null;
+            }, senderJid);
+            if (realPhone) {
+              cleanPhone = realPhone;
+              console.log(`[LID Resolver] Successfully resolved LID ${senderJid} -> Phone ${cleanPhone}`);
+            }
+          }
+        }
+        console.log(`[Feedback System] Resolved incoming sender JID ${msg.from} to contact phone number ${cleanPhone}`);
+      } catch (contactErr) {
+        // Fallback to raw cleanPhone
+      }
 
       // A/B Testing Feedback Loop
       try {
+        if (isGroupMsg) return; // Skip replies inside WhatsApp groups
         let matchedLog = null;
         if (msg.hasQuotedMsg) {
-          const quoted = await msg.getQuotedMessage();
-          if (quoted && quoted.id) {
-            matchedLog = await MessageLog.findOne({
-              $or: [
-                { messageId: quoted.id.id },
-                { messageId: quoted.id._serialized }
-              ]
-            });
+          try {
+            const quoted = await msg.getQuotedMessage();
+            if (quoted && quoted.id) {
+              matchedLog = await MessageLog.findOne({
+                $or: [
+                  { messageId: quoted.id.id },
+                  { messageId: quoted.id._serialized }
+                ]
+              });
+            }
+          } catch (quoteErr) {
+            // Quoted message format issue (common with new WA web versions), fall back to phone lookup
           }
         }
         if (!matchedLog) {
+          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          const digitsOnly = cleanPhone.replace(/\D/g, '');
+          const last8 = digitsOnly.length >= 8 ? digitsOnly.slice(-8) : digitsOnly;
+          
+          let queryCondition = [
+            { phone: cleanPhone },
+            { phone: '0' + cleanPhone.substring(2) },
+            { phone: '62' + cleanPhone.substring(1) }
+          ];
+          if (last8) {
+            queryCondition.push({ phone: new RegExp(last8 + '$') });
+          }
+
           matchedLog = await MessageLog.findOne({
-            phone: cleanPhone,
+            $or: queryCondition,
             status: 'sent',
-            senderProfileId: profileId
+            sentAt: { $gte: twentyFourHoursAgo },
+            feedbackStatus: { $ne: 'replied' }
           }).sort({ sentAt: -1 });
         }
         if (matchedLog && matchedLog.feedbackStatus !== 'replied') {
@@ -771,6 +880,9 @@ async function startScheduler() {
 
       let senderIndex = 0;
       let consecutiveFailures = 0;
+      let sentInBatchCount = 0;
+      const BATCH_LIMIT = 250;
+      const BREAK_MINUTES = 15;
       const ANTI_BAN_FAILURE_THRESHOLD = 3;
 
       for (const log of logs) {
@@ -870,6 +982,7 @@ async function startScheduler() {
           log.status = 'sent';
           log.sentAt = new Date();
           await log.save();
+          sentInBatchCount++;
 
           // Reset consecutive failure counter on successful delivery
           consecutiveFailures = 0;
@@ -927,6 +1040,47 @@ async function startScheduler() {
         const delaySec = Math.floor(Math.random() * (campaign.delayMax - campaign.delayMin + 1)) + campaign.delayMin;
         console.log(`Sleeping for ${delaySec} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+
+        // Anti-ban Batch Break Trigger
+        if (sentInBatchCount >= BATCH_LIMIT) {
+          const remainingPendingLogs = await MessageLog.countDocuments({
+            campaignId: campaign._id,
+            status: 'pending'
+          });
+          
+          if (remainingPendingLogs > 0) {
+            console.log(`[Anti-Ban Guard 🛡️] Telah mengirimkan ${BATCH_LIMIT} pesan. Mengambil jeda rehat selama ${BREAK_MINUTES} menit...`);
+            broadcastSSE({
+              type: 'campaign-rest-break',
+              campaignId: campaign._id,
+              campaignName: campaign.name,
+              message: `🛡️ Anti-Ban Guard: Kampanye sedang diistirahatkan selama ${BREAK_MINUTES} menit untuk menjaga keamanan nomor Anda.`
+            });
+            
+            const restMs = BREAK_MINUTES * 60 * 1000;
+            const checkInterval = 5000;
+            let elapsed = 0;
+            let wasInterrupted = false;
+            
+            while (elapsed < restMs) {
+              const currentCamp = await Campaign.findById(campaign._id);
+              if (!currentCamp || currentCamp.status === 'cancelled' || currentCamp.status === 'paused') {
+                console.log(`Campaign "${campaign.name}" was paused/cancelled during anti-ban break.`);
+                wasInterrupted = true;
+                break;
+              }
+              await new Promise(resolve => setTimeout(resolve, checkInterval));
+              elapsed += checkInterval;
+            }
+            
+            if (wasInterrupted) {
+              break; // exit sending loop
+            }
+            
+            console.log('[Anti-Ban Guard 🛡️] Jeda rehat selesai. Melanjutkan pengiriman...');
+            sentInBatchCount = 0; // reset counter
+          }
+        }
       }
 
       // Mark campaign as completed if still running
@@ -1824,14 +1978,130 @@ app.get('/api/whatsapp/groups', async (req, res) => {
     if (!clientInstance) {
       return res.status(400).json({ error: 'WhatsApp profile tidak terhubung.' });
     }
-    const chats = await clientInstance.getChats();
-    const groups = chats
-      .filter(chat => chat.isGroup)
-      .map(chat => ({
-        id: chat.id._serialized,
-        name: chat.name || 'Grup Tanpa Nama'
-      }));
+    let groups = [];
+    try {
+      groups = await clientInstance.pupPage.evaluate(() => {
+        if (!window.require) {
+          throw new Error('window.require is not defined yet');
+        }
+        const collections = window.require('WAWebCollections');
+        if (!collections || !collections.Chat) {
+          throw new Error('WAWebCollections not loaded');
+        }
+        const allChats = collections.Chat.getModelsArray();
+        return allChats.map(chat => ({
+          id: (chat.id && chat.id._serialized) ? chat.id._serialized : (chat.id ? chat.id.toString() : ''),
+          name: chat.name || chat.formattedTitle || 'Grup Tanpa Nama',
+          isGroup: chat.isGroup === true || chat.id._serialized.endsWith('@g.us')
+        }));
+      });
+      groups = groups.filter(g => g.isGroup);
+    } catch (evalErr) {
+      console.log('Custom Store query failed, falling back to getChats():', evalErr.message);
+      const chats = await clientInstance.getChats();
+      groups = chats
+        .filter(chat => chat.isGroup)
+        .map(chat => ({
+          id: chat.id._serialized,
+          name: chat.name || 'Grup Tanpa Nama'
+        }));
+    }
     res.json(groups);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch WhatsApp group participants (WA Scraper)
+app.get('/api/whatsapp/groups/:id/participants', async (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const profileId = req.query.profileId;
+    if (!profileId) {
+      return res.status(400).json({ error: 'Missing profileId query parameter.' });
+    }
+    const clientInstance = clients.get(profileId);
+    if (!clientInstance) {
+      return res.status(400).json({ error: 'WhatsApp profile tidak terhubung.' });
+    }
+    
+    let participants = [];
+    let groupName = 'Grup WhatsApp';
+    
+    try {
+      const groupData = await clientInstance.pupPage.evaluate((gId) => {
+        if (!window.require) {
+          throw new Error('window.require is not defined yet');
+        }
+        const collections = window.require('WAWebCollections');
+        if (!collections || !collections.Chat) {
+          throw new Error('WAWebCollections not loaded');
+        }
+        const chat = collections.Chat.get(gId);
+        if (!chat) return null;
+        const name = chat.name || chat.formattedTitle || 'Grup WhatsApp';
+        const widFactory = window.require('WAWebWidFactory');
+        const parts = chat.groupMetadata.participants.serialize().map(p => {
+          let userJid = p.id.user || p.id._serialized.split('@')[0];
+          try {
+            if (p.id && p.id._serialized) {
+              const wid = widFactory.createWidFromWidLike(p.id);
+              if (wid && wid.isLid()) {
+                const alt = window.require('WAWebApiContact').getAlternateUserWid(wid);
+                if (alt) {
+                  userJid = alt.user || alt._serialized.split('@')[0];
+                } else {
+                  const contact = collections.Contact.get(p.id._serialized);
+                  if (contact && contact.phoneNumber) {
+                    userJid = contact.phoneNumber.user || contact.phoneNumber._serialized.split('@')[0];
+                  }
+                }
+              }
+            }
+          } catch (resolveErr) {
+            // Fallback to raw id
+          }
+          return {
+            phone: userJid,
+            isAdmin: p.isAdmin,
+            isSuperAdmin: p.isSuperAdmin
+          };
+        });
+        return { name, parts };
+      }, groupId);
+      
+      if (groupData) {
+        groupName = groupData.name;
+        participants = groupData.parts;
+      } else {
+        throw new Error('Group not found in local Store.');
+      }
+    } catch (evalErr) {
+      console.log('Custom group metadata query failed, falling back to getChatById():', evalErr.message);
+      const chat = await clientInstance.getChatById(groupId);
+      if (!chat || !chat.isGroup) {
+        return res.status(400).json({ error: 'Chat bukan merupakan Grup WhatsApp.' });
+      }
+      groupName = chat.name;
+      participants = chat.participants.map(p => ({
+        phone: p.id.user,
+        isAdmin: p.isAdmin,
+        isSuperAdmin: p.isSuperAdmin
+      }));
+    }
+    
+    const contacts = participants.map(p => ({
+      phone: p.phone,
+      name: `Anggota-${p.phone.slice(-4)}`,
+      isAdmin: p.isAdmin,
+      isSuperAdmin: p.isSuperAdmin
+    }));
+    
+    res.json({
+      groupName,
+      participantCount: contacts.length,
+      participants: contacts
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1911,9 +2181,16 @@ function getSystemRamHealth() {
   };
 }
 
-// REST Endpoint to fetch RAM health
-app.get('/api/system/ram-health', (req, res) => {
-  res.json(getSystemRamHealth());
+// REST Endpoint to fetch RAM health & license limits
+app.get('/api/system/ram-health', async (req, res) => {
+  const ramInfo = getSystemRamHealth();
+  try {
+    const limitSetting = await Setting.findOne({ key: 'licenseMaxProfiles' });
+    ramInfo.licenseMaxProfiles = limitSetting ? parseInt(limitSetting.value, 10) : 5;
+  } catch (e) {
+    ramInfo.licenseMaxProfiles = 5;
+  }
+  res.json(ramInfo);
 });
 
 // POST connect profile (Puppeteer init with RAM Safety Guard)
@@ -1925,6 +2202,17 @@ app.post('/api/profiles/:id/connect', async (req, res) => {
     const profileId = req.params.id;
     const profile = await WAProfile.findOne({ profileId });
     if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+    // Check License Profile Connection Limit (Hard Block)
+    const limitSetting = await Setting.findOne({ key: 'licenseMaxProfiles' });
+    const maxProfilesLimit = limitSetting ? parseInt(limitSetting.value, 10) : 5; // Default fallback to 5
+    const activeProfilesCount = clients.size;
+
+    if (!clients.has(profileId) && activeProfilesCount >= maxProfilesLimit) {
+      return res.status(403).json({ 
+        error: `Ditolak: Paket lisensi Anda membatasi maksimal ${maxProfilesLimit} akun WhatsApp yang dapat terhubung secara aktif. Putuskan koneksi akun lain terlebih dahulu.` 
+      });
+    }
 
     const isForce = req.query.force === 'true';
     const ramInfo = getSystemRamHealth();
@@ -2622,6 +2910,81 @@ app.patch('/api/autoreplies/:id/toggle', async (req, res) => {
   }
 });
 
+// Follow-up Program Master REST APIs
+app.get('/api/followup-programs', async (req, res) => {
+  try {
+    const programs = await FollowUpProgram.find().sort({ createdAt: -1 });
+    res.json(programs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/followup-programs', async (req, res) => {
+  try {
+    const { name, description, category, steps } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Nama program wajib diisi.' });
+    }
+    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+      return res.status(400).json({ error: 'Program harus memiliki minimal 1 langkah (step) pesan.' });
+    }
+
+    const program = new FollowUpProgram({
+      name: name.trim(),
+      description: description ? description.trim() : '',
+      category: category ? category.trim() : 'Umum',
+      steps: steps.map((s, idx) => ({
+        stepNumber: idx + 1,
+        offsetValue: Number(s.offsetValue) || 1,
+        offsetUnit: s.offsetUnit || 'days',
+        timeOfDay: s.timeOfDay || '09:00',
+        text: s.text ? s.text.trim() : '',
+        imageBase64: s.imageBase64 || null
+      }))
+    });
+    await program.save();
+    res.json({ success: true, program });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/followup-programs/:id', async (req, res) => {
+  try {
+    const { name, description, category, steps } = req.body;
+    const program = await FollowUpProgram.findById(req.params.id);
+    if (!program) return res.status(404).json({ error: 'Program tidak ditemukan.' });
+
+    if (name) program.name = name.trim();
+    if (description !== undefined) program.description = description.trim();
+    if (category) program.category = category.trim();
+    if (steps && Array.isArray(steps)) {
+      program.steps = steps.map((s, idx) => ({
+        stepNumber: idx + 1,
+        offsetValue: Number(s.offsetValue) || 1,
+        offsetUnit: s.offsetUnit || 'days',
+        timeOfDay: s.timeOfDay || '09:00',
+        text: s.text ? s.text.trim() : '',
+        imageBase64: s.imageBase64 || null
+      }));
+    }
+    await program.save();
+    res.json({ success: true, program });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/followup-programs/:id', async (req, res) => {
+  try {
+    await FollowUpProgram.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Master Program berhasil dihapus.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Autostart Settings API
 app.get('/api/settings/autostart', (req, res) => {
   const startupFolder = path.join(
@@ -2685,6 +3048,74 @@ async function main() {
   const dbUri = await startPortableMongoDB();
   await connectDB(dbUri);
 
+  // Auto-seed default Master Programs if empty
+  try {
+    const progCount = await FollowUpProgram.countDocuments();
+    if (progCount === 0) {
+      await FollowUpProgram.create([
+        {
+          name: 'Program Treatment Facial (Klinik)',
+          description: 'Preset follow-up otomatis pasien perawatan wajah (H+1, H+3, H+21)',
+          category: 'Klinik / Salon',
+          steps: [
+            {
+              stepNumber: 1,
+              offsetValue: 1,
+              offsetUnit: 'days',
+              timeOfDay: '10:00',
+              text: 'Halo Kak {Nama}, terima kasih telah melakukan perawatan Facial kemarin. Jika ada pertanyaan mengenai perawatan wajah Kakak, silakan balasan chat ini ya. Semoga harinya menyenangkan! ✨'
+            },
+            {
+              stepNumber: 2,
+              offsetValue: 3,
+              offsetUnit: 'days',
+              timeOfDay: '14:00',
+              text: 'Halo Kak {Nama}, bagaimana kondisi kulit wajahnya setelah 3 hari treatment? Apakah terasa semakin lembap dan cerah? Jika ada keluhan silakan kabari kami ya.'
+            },
+            {
+              stepNumber: 3,
+              offsetValue: 21,
+              offsetUnit: 'days',
+              timeOfDay: '11:00',
+              text: 'Halo Kak {Nama}, sudah 3 minggu nih sejak treatment facial terakhir! 🌸 Saatnya perawatan rutin bulan ini agar kulit tetap glowing & sehat. Mau kami reservasi jadwalnya minggu ini?'
+            }
+          ]
+        },
+        {
+          name: 'Program Follow-up Prospect 7 Hari (Sales)',
+          description: 'Preset follow-up calon pembeli produk (H+1, H+3, H+7)',
+          category: 'Sales / Olshop',
+          steps: [
+            {
+              stepNumber: 1,
+              offsetValue: 1,
+              offsetUnit: 'days',
+              timeOfDay: '09:30',
+              text: 'Halo Kak {Nama}, salam kenal! Kemarin Kakak sempat menanyakan informasi produk kami. Apakah ada detail atau promo khusus yang ingin ditanyakan lagi?'
+            },
+            {
+              stepNumber: 2,
+              offsetValue: 3,
+              offsetUnit: 'days',
+              timeOfDay: '13:00',
+              text: 'Halo Kak {Nama}, khusus minggu ini ada voucher cashback gratis ongkir untuk pemesanan pertama. Mau kami bantu proses pesanannya sekarang?'
+            },
+            {
+              stepNumber: 3,
+              offsetValue: 7,
+              offsetUnit: 'days',
+              timeOfDay: '16:00',
+              text: 'Halo Kak {Nama}, promo diskon spesial minggu ini akan berakhir nanti malam. Jangan sampai kehabisan stok ya Kak!'
+            }
+          ]
+        }
+      ]);
+      console.log('✅ Seeded default Master Follow-up Programs.');
+    }
+  } catch (seedErr) {
+    console.error('Error seeding Master Programs:', seedErr.message);
+  }
+
   // Validate local license key on startup
   try {
     const setting = await Setting.findOne({ key: 'licenseKey' });
@@ -2735,7 +3166,7 @@ async function main() {
   // ==========================================================================
   // SOFTWARE VERSION CHECKER & AUTO-PATCH API
   // ==========================================================================
-  const CURRENT_APP_VERSION = '1.0.0';
+  const CURRENT_APP_VERSION = '1.0.2';
   const REMOTE_VERSION_URL = 'https://raw.githubusercontent.com/ranggadana13/whatsapp-blast-releases/main/latest.json';
 
   app.get('/api/system/version', async (req, res) => {
@@ -2783,6 +3214,27 @@ async function main() {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
+
+// Graceful Shutdown & Process Exit cleanup handler
+async function gracefulShutdown() {
+  console.log('\n[Graceful Shutdown] Menutup server Express dan semua sesi browser WA...');
+  for (const [profileId, client] of clients.entries()) {
+    try {
+      console.log(`Menutup browser WhatsApp untuk ${profileId}...`);
+      await client.destroy();
+    } catch (err) {
+      console.error(`Gagal menutup browser ${profileId}:`, err.message);
+    }
+  }
+  if (mongodProcess) {
+    console.log('Menghentikan database MongoDB portabel...');
+    mongodProcess.kill();
+  }
+  process.exit(0);
+}
+
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
 
 main().catch(err => {
   console.error('Fatal initialization error:', err);

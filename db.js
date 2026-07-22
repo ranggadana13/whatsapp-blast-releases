@@ -82,11 +82,28 @@ const settingSchema = new mongoose.Schema({
   value: { type: String, required: true }
 });
 
+// Schema for Master Follow-up Programs (Dynamic Preset Studio)
+const followUpProgramSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String },
+  category: { type: String, default: 'Umum' }, // e.g. Klinik, Dealer, Property, Olshop
+  steps: [{
+    stepNumber: { type: Number, required: true },
+    offsetValue: { type: Number, default: 1 },
+    offsetUnit: { type: String, enum: ['minutes', 'hours', 'days'], default: 'days' },
+    timeOfDay: { type: String, default: '09:00' },
+    text: { type: String, required: true },
+    imageBase64: { type: String }
+  }],
+  createdAt: { type: Date, default: Date.now }
+});
+
 const WAProfile = mongoose.model('WAProfile', waProfileSchema);
 const Campaign = mongoose.model('Campaign', campaignSchema);
 const MessageLog = mongoose.model('MessageLog', messageLogSchema);
 const AutoReply = mongoose.model('AutoReply', autoReplySchema);
 const Setting = mongoose.model('Setting', settingSchema);
+const FollowUpProgram = mongoose.model('FollowUpProgram', followUpProgramSchema);
 
 const connectDB = async (uri) => {
   try {
@@ -105,5 +122,6 @@ module.exports = {
   MessageLog,
   AutoReply,
   Setting,
+  FollowUpProgram,
   mongoose
 };

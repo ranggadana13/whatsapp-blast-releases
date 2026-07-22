@@ -80,9 +80,12 @@ function doPost(e) {
     const status = rowValues[5] ? rowValues[5].toString().trim() : "Actived"; // Kolom F (Index 5) - Status
     const storedHwidStr = rowValues[6] ? rowValues[6].toString().trim() : ""; // Kolom G (Index 6) - Hardware ID
     const maxDevicesVal = rowValues[7];      // Kolom H (Index 7) - Max Device
+    const maxProfilesVal = rowValues[9];     // Kolom J (Index 9) - Max WA Profiles
     
     // Default Max Devices ke 1 jika kolom H kosong
     const maxDevices = maxDevicesVal ? parseInt(maxDevicesVal, 10) : 1;
+    // Default Max WA Profiles ke 5 jika kolom J kosong
+    const maxProfiles = maxProfilesVal ? parseInt(maxProfilesVal, 10) : 5;
     
     // Format Tanggal Kedaluwarsa ke YYYY-MM-DD
     let formattedExpiry = "";
@@ -122,13 +125,18 @@ function doPost(e) {
     
     const isAlreadyRegistered = registeredHwids.includes(hwid);
     
+    const usageText = registeredHwids.length + "/" + maxDevices;
+    // Selalu perbarui Kolom I (Kolom ke-9: Device Terpakai)
+    sheet.getRange(rowIndex, 9).setValue(usageText);
+    
     if (isAlreadyRegistered) {
       return ContentService.createTextOutput(JSON.stringify({ 
         success: true, 
         message: "Lisensi aktif.",
         expiryDate: formattedExpiry,
         devicesUsed: registeredHwids.length,
-        maxDevices: maxDevices
+        maxDevices: maxDevices,
+        maxProfiles: maxProfiles
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
@@ -143,18 +151,20 @@ function doPost(e) {
     // Kuota masih ada, daftarkan HWID baru
     registeredHwids.push(hwid);
     const newHwidStr = registeredHwids.join(',');
+    const newUsageText = registeredHwids.length + "/" + maxDevices;
     
     // TULIS KE SPREADSHEET:
-    // Tulis data ke Kolom G (Kolom ke-7: Hardware ID).
-    // Versi sebelumnya memiliki bug di mana ia menulis ke kolom ke-5 (Kolom E: Masa Berlaku) yang menghapus tanggal expiry!
+    // Tulis ke Kolom G (Kolom ke-7: Hardware ID) & Kolom I (Kolom ke-9: Device Terpakai)
     sheet.getRange(rowIndex, 7).setValue(newHwidStr);
+    sheet.getRange(rowIndex, 9).setValue(newUsageText);
     
     return ContentService.createTextOutput(JSON.stringify({ 
       success: true, 
       message: "Aktivasi berhasil! Perangkat terdaftar (" + registeredHwids.length + "/" + maxDevices + " PC).",
       expiryDate: formattedExpiry,
       devicesUsed: registeredHwids.length,
-      maxDevices: maxDevices
+      maxDevices: maxDevices,
+      maxProfiles: maxProfiles
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {

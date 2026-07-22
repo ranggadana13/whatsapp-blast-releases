@@ -28,6 +28,7 @@ Aplikasi ini adalah **WA Blast Desktop & Automated Scheduler** bertema **Modern 
    - Menyediakan badge versi dan indikator visual di header top bar yang berubah menjadi tombol update berwarna emerald neon saat versi baru/patch perbaikan WhatsApp Web tersedia.
 6. **Lisensi Terpusat & Kontrol HWID**:
    - Verifikasi lisensi terpusat berbasis Google Sheets yang mengunci lisensi ke *Hardware ID* (motherboard UUID) PC pengguna dengan batas kuota multi-perangkat.
+   - **Periodic License Safeguard & Real-Time Auto-Revocation**: Sistem secara berkala memverifikasi keabsahan lisensi online (setiap 15 menit). Jika lisensi dihapus/dinonaktifkan (*Suspended*) oleh Admin di Google Sheet, sistem akan memancarkan sinyal SSE `license-revoked`, menonaktifkan aplikasi secara otomatis di layar pengguna, dan memblokir pengiriman broadcast secara real-time.
 6. **Privacy-First & Offline Storage**:
    - Menggunakan basis data MongoDB lokal dan launcher desktop tanpa memerlukan server cloud pihak ketiga yang mahal.
 
@@ -135,9 +136,13 @@ Di halaman pengaturan aplikasi (Kolom Kiri), disediakan sistem Sandbox Data Uji 
 - **Isi Data Dummy (`/api/dummy/seed`)**: Tombol untuk mempopulasikan database MongoDB secara instan dengan data uji coba profesional (termasuk riwayat log pengiriman, statistik performa bulanan, dan data respon pesan masuk pelanggan) agar dashboard terlihat hidup dan siap diuji coba.
 - **Reset Database (`/api/dummy/reset`)**: Tombol untuk mereset seluruh database Sandbox menjadi kosong bersih kembali.
 
----
-
-## 9. Sistem Lisensi Perangkat & GAS Router Multi-Server
+## 10. Pengemasan Installer 1-Klik Windows Setup Wizard
+- **Inno Setup Script (`installer-config.iss`)**:
+  - Konfigurasi pengemasan installer profesional yang menggabungkan seluruh dependensi (`Launcher.exe`, `server.js`, `public/`, `bin/`, dan `node_modules/`) menjadi 1 file installer tunggal `Setup-WABlast-v1.0.0.exe`.
+  - Menginstal ke folder aplikasi pengguna (`C:\Users\<User>\AppData\Local\Programs\WABlast`) tanpa memerlukan hak akses Administrator khusus.
+  - Otomatis membuat Icon Pintasan Desktop dan Start Menu Windows, serta dilengkapi uninstaller resmi Windows Control Panel (`unins000.exe`).
+- **Skrip Kompilasi Otomatis (`Build-Setup-Installer.bat`)**:
+  - Menyediakan perintah 1-klik untuk mengompilasi Launcher C# dan membungkus file installer ke folder `dist/` secara otomatis.
 Sistem memiliki pengaman lisensi multi-device yang dikendalikan secara redundan (*High Availability*) oleh 3 Server Google Apps Script yang terhubung ke 1 Google Sheet terpusat:
 - **Informasi Lisensi Perangkat (Settings)**:
   - Menampilkan Status Lisensi (Aktif/Tidak Aktif), Tanggal Kedaluwarsa, kuota Perangkat Terdaftar (`devicesUsed / maxDevices` PC), HWID asli komputer, dan License Key yang disembunyikan default (`••••••••••••••••`) dengan ikon mata toggle intip.
@@ -145,7 +150,7 @@ Sistem memiliki pengaman lisensi multi-device yang dikendalikan secara redundan 
   - Aplikasi secara otomatis mengacak dan merotasi (*Load Balancing*) pengecekan ke 3 Server GAS (Server 1 Utama, Server 2 Cadangan, Server 3 Cadangan). Jika salah satu server mengalami *rate limit* (HTTP 429) atau *timeout*, aplikasi secara otomatis beralih (*failover*) ke server berikutnya tanpa gangguan pada pengguna.
 - **Google Apps Script (`google-apps-script-fix.gs`)**:
   - Menangani komunikasi verifikasi lisensi aman (`doPost`) dan verifikasi status aktif (`doGet`).
-  - Pemetaan Kolom Spreadsheet: Kolom A (`License Key`), B (`Nama Pembeli`), C (`Tanggal Beli`), D (`Durasi Beli`), E (`Masa Berlaku` / Expiry), F (`Status` - Actived/Suspended), G (`Hardware ID`), H (`Max Device`).
+  - Pemetaan Kolom Spreadsheet: Kolom A (`License Key`), B (`Nama Pembeli`), C (`Tanggal Beli`), D (`Durasi Beli`), E (`Masa Berlaku` / Expiry), F (`Status` - Actived/Suspended), G (`Hardware ID`), H (`Max Device`), I (`Device Terpakai` - Format "1/4").
   - **Auto-Targeting Spreadsheet ID**: Mendukung fungsi `getTargetSheet()` sehingga dapat dijalankan baik sebagai *Bound Script* maupun *Standalone Script* menggunakan ID Spreadsheet terpusat.
   - **Auto-Calculation Expiry Date**: Jika kolom E (Masa Berlaku) kosong saat pertama kali diaktivasi dari aplikasi, GAS akan otomatis menghitung tanggal kedaluwarsa berdasarkan Tanggal Beli (Kolom C) dan Durasi Beli (Kolom D) (misal: +1 bulan untuk "1 Bulan", kecuali berdurasi "Lifetime").
   - Menulis pendaftaran HWID PC baru secara aman ke Kolom G (Kolom ke-7) tanpa menimpa data tanggal masa berlaku di Kolom E.Launcher.exe**: Mengompilasi `Launcher.cs` dengan CLI .NET Framework `csc.exe` untuk menjalankan `server.js` Node.js di latar belakang dan meluncurkan browser secara instan.

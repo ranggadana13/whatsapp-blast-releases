@@ -198,6 +198,9 @@ function startSSE() {
         if (detailModal.classList.contains('active') && detailModal.dataset.campaignId === data.campaignId) {
           loadCampaignDetails(data.campaignId);
         }
+      } else if (data.type === 'license-revoked') {
+        alert(data.reason || '🛡️ Lisensi Anda telah dinonaktifkan atau dihapus oleh Admin. Akses aplikasi dihentikan.');
+        window.location.reload();
       }
     } catch (err) {
       console.error('Error parsing SSE data:', err);
@@ -497,6 +500,76 @@ function renderPreviewTable(headers, phoneHeader, nameHeader) {
     trMore.innerHTML = `<td colspan="${headers.length + 1}" style="text-align:center; color:var(--color-text-muted); font-style:italic;">...dan ${parsedContacts.length - 50} kontak lainnya.</td>`;
     previewTableBody.appendChild(trMore);
   }
+  updateDeliveryEstimation();
+}
+
+function updateDeliveryEstimation() {
+  const calcBox = document.getElementById('delivery-calc-box');
+  if (!calcBox) return;
+
+  const totalContacts = parsedContacts.length;
+  if (totalContacts === 0) {
+    calcBox.style.display = 'none';
+    return;
+  }
+
+  const delayMinInput = document.getElementById('delay-min');
+  const delayMaxInput = document.getElementById('delay-max');
+  const scheduledTimeInput = document.getElementById('scheduled-time');
+
+  const delayMin = parseInt(delayMinInput ? delayMinInput.value : 5) || 5;
+  const delayMax = parseInt(delayMaxInput ? delayMaxInput.value : 15) || 15;
+  const avgDelay = (delayMin + delayMax) / 2;
+
+  // Calculate batch breaks: 250 messages per batch, 15 minutes break in between
+  const BATCH_SIZE = 250;
+  const BREAK_MINUTES = 15;
+  const numBreaks = Math.max(0, Math.ceil(totalContacts / BATCH_SIZE) - 1);
+  const totalBreakSeconds = numBreaks * BREAK_MINUTES * 60;
+  
+  const messageSeconds = totalContacts * avgDelay;
+  const totalSeconds = messageSeconds + totalBreakSeconds;
+
+  let durationStr = '';
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+
+  if (hours > 0) durationStr += `${hours} jam `;
+  if (minutes > 0 || hours > 0) durationStr += `${minutes} menit `;
+  durationStr += `${seconds} detik`;
+
+  if (numBreaks > 0) {
+    durationStr += ` (Termasuk ${numBreaks}x jeda rehat)`;
+  }
+
+  const scheduledInput = scheduledTimeInput ? scheduledTimeInput.value : '';
+  let startTime = new Date();
+  if (scheduledInput) {
+    const parsedStart = new Date(scheduledInput);
+    if (parsedStart > startTime) {
+      startTime = parsedStart;
+    }
+  }
+
+  const endTime = new Date(startTime.getTime() + totalSeconds * 1000);
+  
+  const options = { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  };
+  const endTimeStr = endTime.toLocaleDateString('id-ID', options);
+
+  document.getElementById('calc-total-contacts').textContent = totalContacts.toLocaleString('id-ID');
+  document.getElementById('calc-avg-delay').textContent = avgDelay;
+  document.getElementById('calc-duration').textContent = durationStr;
+  document.getElementById('calc-end-time').textContent = endTimeStr;
+  
+  calcBox.style.display = 'block';
 }
 
 function clearContacts() {
@@ -507,10 +580,27 @@ function clearContacts() {
   fileInput.value = '';
   csvPasteArea.value = '';
   previewTableBody.innerHTML = '<tr><td colspan="3" class="empty-state">Silakan masukkan / unggah kontak terlebih dahulu.</td></tr>';
+  
+  const btnExport = document.getElementById('btn-scraper-export-csv');
+  if (btnExport) btnExport.style.display = 'none';
+  
+  updateDeliveryEstimation();
 }
 
 if (btnClearContacts) {
   btnClearContacts.addEventListener('click', clearContacts);
+}
+
+// Bind input event listeners for dynamic calculator updates
+const delayMinEl = document.getElementById('delay-min');
+const delayMaxEl = document.getElementById('delay-max');
+const scheduledTimeEl = document.getElementById('scheduled-time');
+
+if (delayMinEl) delayMinEl.addEventListener('input', updateDeliveryEstimation);
+if (delayMaxEl) delayMaxEl.addEventListener('input', updateDeliveryEstimation);
+if (scheduledTimeEl) {
+  scheduledTimeEl.addEventListener('input', updateDeliveryEstimation);
+  scheduledTimeEl.addEventListener('change', updateDeliveryEstimation);
 }
 
 // Insert variables on textarea helper
@@ -543,6 +633,10 @@ formCreateCampaign.addEventListener('submit', async (e) => {
   }
 
   const name = txtCampaignName.value.trim();
+  if (!name) {
+    alert('Silakan isi Nama Campaign!');
+    return;
+  }
   
   // Read dynamic templates
   const templateCards = document.querySelectorAll('.ab-template-card');
@@ -568,8 +662,20 @@ formCreateCampaign.addEventListener('submit', async (e) => {
   }
 
   const scheduledTime = txtScheduledTime.value;
-  const delayMin = parseInt(txtDelayMin.value);
-  const delayMax = parseInt(txtDelayMax.value);
+  if (!scheduledTime) {
+    alert('Silakan tentukan Waktu Pengiriman terlebih dahulu!');
+    return;
+  }
+
+  const delayMinStr = txtDelayMin.value.trim();
+  const delayMaxStr = txtDelayMax.value.trim();
+  if (!delayMinStr || !delayMaxStr) {
+    alert('Silakan isi Jeda Minimum dan Jeda Maksimum pengiriman!');
+    return;
+  }
+
+  const delayMin = parseInt(delayMinStr);
+  const delayMax = parseInt(delayMaxStr);
 
   if (delayMin > delayMax) {
     alert('Jeda Minimum tidak boleh lebih besar dari Jeda Maksimum!');
@@ -644,10 +750,11 @@ formCreateCampaign.addEventListener('submit', async (e) => {
     const btnRemoveCampImage = document.getElementById('btn-remove-image-camp');
     if (btnRemoveCampImage) btnRemoveCampImage.click();
     
-    if (checkboxCampToggleButtons) {
-      checkboxCampToggleButtons.checked = false;
-      checkboxCampToggleButtons.dispatchEvent(new Event('change'));
-    }
+    const toggleCheckboxes = document.querySelectorAll('.camp-template-toggle-buttons');
+    toggleCheckboxes.forEach(cb => {
+      cb.checked = false;
+      cb.dispatchEvent(new Event('change'));
+    });
     const campButtonsList = document.getElementById('camp-buttons-list');
     if (campButtonsList) campButtonsList.innerHTML = '';
 
@@ -3047,6 +3154,19 @@ function populateProfilesSelection() {
       selectElement.appendChild(opt);
     });
   }
+
+  // 3. Select options for Scraper Profile Select
+  const scraperSelectElement = document.getElementById('scraper-profile-select');
+  if (scraperSelectElement) {
+    scraperSelectElement.innerHTML = `<option value="">-- Pilih Akun WA --</option>`;
+    const connectedProfiles = loadedProfiles.filter(p => p.status === 'connected');
+    connectedProfiles.forEach(prof => {
+      const opt = document.createElement('option');
+      opt.value = prof.profileId;
+      opt.textContent = `${prof.name} (+${prof.phone || 'Unknown'})`;
+      scraperSelectElement.appendChild(opt);
+    });
+  }
 }
 
 async function loadRamHealthInfo() {
@@ -3063,7 +3183,8 @@ async function loadRamHealthInfo() {
     
     if (res.ok) {
       ramTitle.textContent = `RAM System: ${data.totalMemGB} GB (${data.memUsagePercent}% terpakai)`;
-      ramDesc.textContent = `Batas aman: Max ${data.recommendedMaxProfiles} profil WA aktif bersamaan. (Aktif: ${data.activeProfilesCount} profil)`;
+      const licMax = data.licenseMaxProfiles || 5;
+      ramDesc.textContent = `Batas aman RAM: Max ${data.recommendedMaxProfiles} profil. (Lisensi Paket: Max ${licMax} WA Connected, Aktif: ${data.activeProfilesCount}/${licMax})`;
 
       if (data.healthStatus === 'optimal') {
         ramBadge.textContent = 'Optimal';
@@ -3136,6 +3257,7 @@ async function connectProfile(profileId, force = false) {
     alert('Gagal menghubungkan profil: ' + error.message);
     qrInstruction.style.display = 'block';
     connectingBox.style.display = 'none';
+    loadProfiles();
   }
 }
 
@@ -4636,5 +4758,727 @@ function drawDashboardChart(logs = []) {
       }
     });
   }
+
+  // ==========================================================================
+  // WA GROUP SCRAPER LOGIC
+  // ==========================================================================
+  const scraperProfileSelect = document.getElementById('scraper-profile-select');
+  const scraperGroupSelect = document.getElementById('scraper-group-select');
+  const scraperGroupSearch = document.getElementById('scraper-group-search');
+  const btnScraperLoadGroups = document.getElementById('btn-scraper-load-groups');
+  const btnScraperStartScrape = document.getElementById('btn-scraper-start-scrape');
+
+  let allLoadedGroups = [];
+
+  function renderGroupOptions(groupsList) {
+    scraperGroupSelect.innerHTML = '<option value="">-- Pilih Grup WhatsApp --</option>';
+    if (groupsList.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = "";
+      opt.textContent = "Tidak ada grup yang ditemukan";
+      scraperGroupSelect.appendChild(opt);
+      return;
+    }
+    groupsList.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      opt.textContent = g.name;
+      scraperGroupSelect.appendChild(opt);
+    });
+  }
+
+  if (scraperGroupSearch) {
+    scraperGroupSearch.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase().trim();
+      if (!q) {
+        renderGroupOptions(allLoadedGroups);
+      } else {
+        const filtered = allLoadedGroups.filter(g => g.name.toLowerCase().includes(q));
+        renderGroupOptions(filtered);
+      }
+    });
+  }
+
+  async function loadScraperGroups() {
+    const profileId = scraperProfileSelect.value;
+    if (!profileId) {
+      alert('Pilih Akun WhatsApp terlebih dahulu!');
+      return;
+    }
+    
+    btnScraperLoadGroups.disabled = true;
+    btnScraperLoadGroups.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
+    
+    try {
+      const res = await fetch(`/api/whatsapp/groups?profileId=${profileId}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Gagal memuat grup');
+      }
+      
+      allLoadedGroups = await res.json();
+      
+      if (scraperGroupSearch) {
+        scraperGroupSearch.value = '';
+        scraperGroupSearch.style.display = allLoadedGroups.length > 0 ? 'block' : 'none';
+      }
+      
+      renderGroupOptions(allLoadedGroups);
+    } catch (error) {
+      alert('Gagal memuat grup: ' + error.message);
+    } finally {
+      btnScraperLoadGroups.disabled = false;
+      btnScraperLoadGroups.innerHTML = '<i class="fas fa-sync-alt"></i> Muat Grup';
+    }
+  }
+
+  async function startGroupScrape() {
+    const profileId = scraperProfileSelect.value;
+    const groupId = scraperGroupSelect.value;
+    
+    if (!profileId || !groupId) {
+      alert('Harap pilih Akun WhatsApp dan Grup terlebih dahulu!');
+      return;
+    }
+    
+    btnScraperStartScrape.disabled = true;
+    btnScraperStartScrape.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Men-scrape Anggota...';
+    
+    try {
+      const res = await fetch(`/api/whatsapp/groups/${groupId}/participants?profileId=${profileId}`);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Gagal men-scrape');
+      }
+      
+      const data = await res.json();
+      
+      if (!data.participants || data.participants.length === 0) {
+        alert('Grup ini kosong atau tidak memiliki anggota yang bisa di-scrape.');
+        return;
+      }
+      
+      // Map to parsedContacts
+      parsedContacts = data.participants.map(p => ({
+        phone: p.phone,
+        name: p.name || 'Anggota Grup',
+        variables: {}
+      }));
+      
+      // Show CSV export button
+      const btnExport = document.getElementById('btn-scraper-export-csv');
+      if (btnExport) {
+        btnExport.style.display = 'inline-flex';
+      }
+      
+      // Render the contact list preview in the UI
+      renderPreviewTable(['Phone', 'Name'], 'Phone', 'Name');
+      
+      alert(`Sukses! Berhasil men-scrape ${data.participantCount} nomor dari grup "${data.groupName}" ke daftar penerima.`);
+    } catch (error) {
+      alert('Gagal men-scrape anggota grup: ' + error.message);
+    } finally {
+      btnScraperStartScrape.disabled = false;
+      btnScraperStartScrape.innerHTML = '<i class="fas fa-filter"></i> Scrape & Impor Kontak';
+    }
+  }
+
+  // Handle Scraped CSV Download
+  const btnScraperExportCsv = document.getElementById('btn-scraper-export-csv');
+  if (btnScraperExportCsv) {
+    btnScraperExportCsv.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (parsedContacts.length === 0) {
+        alert('Tidak ada kontak untuk diekspor.');
+        return;
+      }
+      try {
+        let csvContent = 'Phone,Name\n';
+        parsedContacts.forEach(c => {
+          const cleanName = c.name ? c.name.replace(/"/g, '""') : 'Anggota';
+          csvContent += `${c.phone},"${cleanName}"\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `scraped-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+        
+        // Append to DOM, click, and clean up after small timeout
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 150);
+      } catch (err) {
+        alert('Gagal mengekspor CSV: ' + err.message);
+      }
+    });
+  }
+
+  if (btnScraperLoadGroups) {
+    btnScraperLoadGroups.addEventListener('click', loadScraperGroups);
+  }
+  if (scraperProfileSelect) {
+    scraperProfileSelect.addEventListener('change', loadScraperGroups);
+  }
+  if (btnScraperStartScrape) {
+    btnScraperStartScrape.addEventListener('click', startGroupScrape);
+  }
+})();
+
+// ==========================================================================
+// MASTER FOLLOW-UP PROGRAM STUDIO & STANDALONE INDIVIDUAL BLAST ENGINE
+// ==========================================================================
+(function initMasterProgramStudio() {
+  let masterProgramsList = [];
+  let currentEditingMasterId = null;
+
+  // Sub-tab Switcher inside Blast Individu tab
+  const btnSubtabSchedule = document.getElementById('btn-subtab-indiv-schedule');
+  const btnSubtabMaster = document.getElementById('btn-subtab-indiv-master');
+  const subviewSchedule = document.getElementById('subview-indiv-schedule');
+  const subviewMaster = document.getElementById('subview-indiv-master');
+
+  if (btnSubtabSchedule && btnSubtabMaster) {
+    btnSubtabSchedule.addEventListener('click', () => {
+      btnSubtabSchedule.className = 'btn btn-primary';
+      btnSubtabSchedule.style.background = 'var(--accent-primary)';
+      btnSubtabSchedule.style.borderColor = 'var(--accent-primary)';
+
+      btnSubtabMaster.className = 'btn btn-secondary';
+      btnSubtabMaster.style.background = 'transparent';
+      btnSubtabMaster.style.borderColor = 'rgba(255,255,255,0.12)';
+
+      subviewSchedule.style.display = 'flex';
+      subviewMaster.style.display = 'none';
+    });
+
+    btnSubtabMaster.addEventListener('click', () => {
+      btnSubtabMaster.className = 'btn btn-primary';
+      btnSubtabMaster.style.background = 'var(--accent-primary)';
+      btnSubtabMaster.style.borderColor = 'var(--accent-primary)';
+
+      btnSubtabSchedule.className = 'btn btn-secondary';
+      btnSubtabSchedule.style.background = 'transparent';
+      btnSubtabSchedule.style.borderColor = 'rgba(255,255,255,0.12)';
+
+      subviewSchedule.style.display = 'none';
+      subviewMaster.style.display = 'grid';
+      loadMasterPrograms();
+    });
+  }
+
+  // Load Master Programs from API
+  async function loadMasterPrograms() {
+    try {
+      const res = await fetch('/api/followup-programs');
+      const data = await res.json();
+      if (res.ok) {
+        masterProgramsList = data || [];
+        renderMasterProgramsDropdown();
+        renderMasterProgramsCards();
+      }
+    } catch (err) {
+      console.error('Failed to load Master Programs:', err);
+    }
+  }
+
+  // Populate Dropdown in Schedule Form
+  function renderMasterProgramsDropdown() {
+    const selectPreset = document.getElementById('indiv-program-preset-sa');
+    if (!selectPreset) return;
+    selectPreset.innerHTML = '<option value="">-- Pilih Master Program --</option>';
+    masterProgramsList.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p._id;
+      opt.textContent = `${p.name} (${p.steps ? p.steps.length : 0} Langkah)`;
+      selectPreset.appendChild(opt);
+    });
+  }
+
+  // Render Saved Master Program Cards in Left Panel
+  function renderMasterProgramsCards() {
+    const listContainer = document.getElementById('master-programs-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+
+    if (masterProgramsList.length === 0) {
+      listContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--color-text-muted); font-size:12px;">Belum ada Master Program tersimpan.</div>`;
+      return;
+    }
+
+    masterProgramsList.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'panel glass';
+      card.style.cssText = `padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: all 0.2s;`;
+      
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <h5 style="font-size: 13.5px; font-weight: 600; color: #fff; margin: 0; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.name}</h5>
+          <span class="badge info" style="font-size: 10px; padding: 2px 6px;">${p.category || 'Umum'}</span>
+        </div>
+        <p style="font-size: 11.5px; color: var(--color-text-muted); margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${p.description || 'Tidak ada deskripsi.'}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 4px; font-size: 11px;">
+          <span style="color: #10b981; font-weight: 600;"><i class="fas fa-layer-group"></i> ${p.steps ? p.steps.length : 0} Langkah Pesan</span>
+          <div style="display:flex; gap: 6px;">
+            <button type="button" class="btn btn-secondary btn-small btn-edit-prog" data-id="${p._id}" style="padding: 2px 8px; font-size: 10.5px;">Edit</button>
+            <button type="button" class="btn btn-danger btn-small btn-del-prog" data-id="${p._id}" style="padding: 2px 8px; font-size: 10.5px; background: rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Hapus</button>
+          </div>
+        </div>
+      `;
+
+      card.querySelector('.btn-edit-prog').addEventListener('click', (e) => {
+        e.stopPropagation();
+        editMasterProgram(p._id);
+      });
+
+      card.querySelector('.btn-del-prog').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteMasterProgram(p._id);
+      });
+
+      listContainer.appendChild(card);
+    });
+  }
+
+  // Helper to create Step Builder Item for Master Form Studio
+  function createMasterStepItem(stepData = {}) {
+    const stepDiv = document.createElement('div');
+    stepDiv.className = 'master-step-item panel glass';
+    stepDiv.style.cssText = `padding: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; gap: 12px;`;
+
+    const offsetVal = stepData.offsetValue !== undefined ? stepData.offsetValue : 1;
+    const offsetUnit = stepData.offsetUnit || 'days';
+    const timeOfDay = stepData.timeOfDay || '09:00';
+    const textVal = stepData.text || '';
+
+    stepDiv.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="step-badge-label" style="font-size: 12px; font-weight: 700; color: var(--accent-primary);">Langkah Pesan</span>
+        <button type="button" class="btn btn-danger btn-small btn-remove-master-step" style="padding: 3px 8px; font-size: 10.5px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">
+          <i class="fas fa-trash-alt"></i> Hapus Step
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; align-items: center;">
+        <div class="form-group" style="margin:0;">
+          <label style="font-size: 11px; margin-bottom: 4px;">Jeda Pengiriman</label>
+          <div style="display:flex; gap: 6px;">
+            <input type="number" class="step-offset-val" min="0" value="${offsetVal}" required style="padding: 8px; font-size: 12.5px; background: #0d0d0d; border: 1px solid #292929; color: #fff; width: 70px;">
+            <select class="step-offset-unit" style="padding: 8px; font-size: 12.5px; background: #0d0d0d; border: 1px solid #292929; color: #fff; flex: 1;">
+              <option value="days" ${offsetUnit === 'days' ? 'selected' : ''}>Hari (H+)</option>
+              <option value="hours" ${offsetUnit === 'hours' ? 'selected' : ''}>Jam</option>
+              <option value="minutes" ${offsetUnit === 'minutes' ? 'selected' : ''}>Menit</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin:0;">
+          <label style="font-size: 11px; margin-bottom: 4px;">Pukul Target (WIB)</label>
+          <input type="time" class="step-time-of-day" value="${timeOfDay}" style="padding: 8px; font-size: 12.5px; background: #0d0d0d; border: 1px solid #292929; color: #fff;">
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size: 11px; color:var(--color-text-muted);">Sisip Variabel Cepat</label>
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-secondary btn-small btn-insert-var" data-var="{Nama}" style="padding: 3px 6px; font-size: 10px;">+{Nama}</button>
+            <button type="button" class="btn btn-secondary btn-small btn-insert-var" data-var="{Nomor}" style="padding: 3px 6px; font-size: 10px;">+{Nomor}</button>
+            <button type="button" class="btn btn-secondary btn-small btn-insert-var" data-var="{Link_Drive}" style="padding: 3px 6px; font-size: 10px;">+{Link_Drive}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin:0;">
+        <label style="font-size: 11.5px; font-weight: 600; margin-bottom: 4px; display:block;">Pesan Copywriting <span class="required">*</span></label>
+        <textarea class="step-text-val" rows="4" required placeholder="Tulis isi pesan follow-up di sini... (Super nyaman untuk mengetik pesan panjang)" style="width: 100%; padding: 12px; font-size: 13px; line-height: 1.5; font-family: 'Inter', sans-serif; background: #080808; border: 1px solid #262626; border-radius: 8px; color: #fff; resize: vertical; min-height: 110px;"></textarea>
+      </div>
+    `;
+
+    stepDiv.querySelector('.step-text-val').value = textVal;
+
+    stepDiv.querySelector('.btn-remove-master-step').addEventListener('click', () => {
+      const container = document.getElementById('master-prog-steps-container');
+      if (container.querySelectorAll('.master-step-item').length <= 1) {
+        alert('Minimal harus ada 1 langkah (step) pesan!');
+        return;
+      }
+      stepDiv.remove();
+      updateStepNumbers();
+    });
+
+    stepDiv.querySelectorAll('.btn-insert-var').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const textarea = stepDiv.querySelector('.step-text-val');
+        const v = btn.getAttribute('data-var');
+        if (textarea && v) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = textarea.value;
+          textarea.value = text.substring(0, start) + v + text.substring(end);
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = start + v.length;
+        }
+      });
+    });
+
+    return stepDiv;
+  }
+
+  function updateStepNumbers() {
+    const container = document.getElementById('master-prog-steps-container');
+    if (!container) return;
+    const items = container.querySelectorAll('.master-step-item');
+    items.forEach((item, idx) => {
+      const badge = item.querySelector('.step-badge-label');
+      if (badge) badge.textContent = `Langkah #${idx + 1}`;
+    });
+  }
+
+  // Add Step button in Master Studio
+  const btnAddMasterStep = document.getElementById('btn-add-master-step');
+  if (btnAddMasterStep) {
+    btnAddMasterStep.addEventListener('click', () => {
+      const container = document.getElementById('master-prog-steps-container');
+      if (container) {
+        container.appendChild(createMasterStepItem());
+        updateStepNumbers();
+      }
+    });
+  }
+
+  // Reset Master Form
+  function resetMasterForm() {
+    currentEditingMasterId = null;
+    document.getElementById('master-prog-id').value = '';
+    document.getElementById('master-prog-name').value = '';
+    document.getElementById('master-prog-category').value = '';
+    document.getElementById('master-prog-desc').value = '';
+
+    const modeBadge = document.getElementById('master-program-mode-badge');
+    if (modeBadge) {
+      modeBadge.textContent = 'Program Baru';
+      modeBadge.className = 'badge info';
+    }
+
+    const container = document.getElementById('master-prog-steps-container');
+    if (container) {
+      container.innerHTML = '';
+      container.appendChild(createMasterStepItem());
+      updateStepNumbers();
+    }
+  }
+
+  const btnResetMaster = document.getElementById('btn-reset-master-form');
+  if (btnResetMaster) {
+    btnResetMaster.addEventListener('click', resetMasterForm);
+  }
+
+  const btnNewMaster = document.getElementById('btn-new-master-program');
+  if (btnNewMaster) {
+    btnNewMaster.addEventListener('click', resetMasterForm);
+  }
+
+  // Edit Master Program
+  function editMasterProgram(progId) {
+    const prog = masterProgramsList.find(p => p._id === progId);
+    if (!prog) return;
+
+    currentEditingMasterId = prog._id;
+    document.getElementById('master-prog-id').value = prog._id;
+    document.getElementById('master-prog-name').value = prog.name || '';
+    document.getElementById('master-prog-category').value = prog.category || '';
+    document.getElementById('master-prog-desc').value = prog.description || '';
+
+    const modeBadge = document.getElementById('master-program-mode-badge');
+    if (modeBadge) {
+      modeBadge.textContent = 'Edit Program';
+      modeBadge.className = 'badge running';
+    }
+
+    const container = document.getElementById('master-prog-steps-container');
+    if (container) {
+      container.innerHTML = '';
+      if (prog.steps && prog.steps.length > 0) {
+        prog.steps.forEach(s => {
+          container.appendChild(createMasterStepItem(s));
+        });
+      } else {
+        container.appendChild(createMasterStepItem());
+      }
+      updateStepNumbers();
+    }
+  }
+
+  // Delete Master Program
+  async function deleteMasterProgram(progId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus Master Program ini dari koleksi?')) return;
+    try {
+      const res = await fetch(`/api/followup-programs/${progId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) {
+        loadMasterPrograms();
+        if (currentEditingMasterId === progId) {
+          resetMasterForm();
+        }
+      } else {
+        alert('Gagal menghapus: ' + data.error);
+      }
+    } catch (err) {
+      alert('Gagal menghapus: ' + err.message);
+    }
+  }
+
+  // Submit Master Program Form
+  const formMasterBuilder = document.getElementById('form-master-program-builder');
+  if (formMasterBuilder) {
+    formMasterBuilder.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('master-prog-name').value.trim();
+      const category = document.getElementById('master-prog-category').value.trim();
+      const description = document.getElementById('master-prog-desc').value.trim();
+
+      const container = document.getElementById('master-prog-steps-container');
+      const stepItems = container.querySelectorAll('.master-step-item');
+
+      if (stepItems.length === 0) {
+        alert('Minimal harus ada 1 langkah pesan!');
+        return;
+      }
+
+      const steps = [];
+      stepItems.forEach((item, idx) => {
+        const offsetValue = Number(item.querySelector('.step-offset-val').value) || 0;
+        const offsetUnit = item.querySelector('.step-offset-unit').value;
+        const timeOfDay = item.querySelector('.step-time-of-day').value || '09:00';
+        const text = item.querySelector('.step-text-val').value.trim();
+
+        steps.push({
+          stepNumber: idx + 1,
+          offsetValue,
+          offsetUnit,
+          timeOfDay,
+          text
+        });
+      });
+
+      const payload = { name, category, description, steps };
+      const progId = document.getElementById('master-prog-id').value;
+
+      const url = progId ? `/api/followup-programs/${progId}` : '/api/followup-programs';
+      const method = progId ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('Berhasil menyimpan Master Program!');
+          resetMasterForm();
+          loadMasterPrograms();
+        } else {
+          alert('Gagal menyimpan: ' + data.error);
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan: ' + err.message);
+      }
+    });
+  }
+
+  // Load Selected Master Program into Schedule Form Timeline
+  const btnApplyPreset = document.getElementById('btn-apply-program-preset-sa');
+  if (btnApplyPreset) {
+    btnApplyPreset.addEventListener('click', () => {
+      const selectPreset = document.getElementById('indiv-program-preset-sa');
+      const progId = selectPreset ? selectPreset.value : '';
+      if (!progId) {
+        alert('Silakan pilih Master Program dari dropdown terlebih dahulu.');
+        return;
+      }
+
+      const prog = masterProgramsList.find(p => p._id === progId);
+      if (!prog) return;
+
+      const container = document.getElementById('indiv-messages-container-sa');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const now = new Date();
+
+      prog.steps.forEach((s, idx) => {
+        const card = createIndivMessageCard();
+        
+        // Populate text
+        const textarea = card.querySelector('.indiv-msg-text');
+        if (textarea) textarea.value = s.text;
+
+        // Calculate target datetime based on offset
+        const targetDate = new Date(now.getTime());
+        if (s.offsetUnit === 'days') {
+          targetDate.setDate(targetDate.getDate() + (s.offsetValue || 1));
+        } else if (s.offsetUnit === 'hours') {
+          targetDate.setHours(targetDate.getHours() + (s.offsetValue || 1));
+        } else if (s.offsetUnit === 'minutes') {
+          targetDate.setMinutes(targetDate.getMinutes() + (s.offsetValue || 1));
+        }
+
+        if (s.timeOfDay) {
+          const [hh, mm] = s.timeOfDay.split(':');
+          if (hh !== undefined && mm !== undefined) {
+            targetDate.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+          }
+        }
+
+        // Set time input in card
+        const timeInput = card.querySelector('.indiv-msg-time');
+        if (timeInput) {
+          const year = targetDate.getFullYear();
+          const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+          const day = String(targetDate.getDate()).padStart(2, '0');
+          const hours = String(targetDate.getHours()).padStart(2, '0');
+          const mins = String(targetDate.getMinutes()).padStart(2, '0');
+          timeInput.value = `${year}-${month}-${day}T${hours}:${mins}`;
+        }
+
+        container.appendChild(card);
+      });
+
+      alert(`Sukses memuat ${prog.steps.length} langkah pesan dari "${prog.name}" ke linimasa!`);
+    });
+  }
+
+  // Add Step button in Standalone Schedule Form
+  const btnAddStepSa = document.getElementById('btn-add-followup-step-sa');
+  if (btnAddStepSa) {
+    btnAddStepSa.addEventListener('click', () => {
+      const container = document.getElementById('indiv-messages-container-sa');
+      if (container) {
+        container.appendChild(createIndivMessageCard());
+      }
+    });
+  }
+
+  // Handle Form Submit Standalone Schedule
+  const formIndivSa = document.getElementById('form-individual-blast-sa');
+  if (formIndivSa) {
+    formIndivSa.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const senderProfileId = document.getElementById('indiv-profile-sa').value;
+      if (!senderProfileId) {
+        alert('Silakan pilih profil WhatsApp pengirim.');
+        return;
+      }
+
+      const phone = document.getElementById('indiv-phone-sa').value.trim();
+      const name = document.getElementById('indiv-name-sa').value.trim();
+
+      const container = document.getElementById('indiv-messages-container-sa');
+      const cards = container.querySelectorAll('.message-card');
+
+      if (cards.length === 0) {
+        alert('Silakan tambahkan minimal 1 pesan follow-up.');
+        return;
+      }
+
+      const messages = [];
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const text = card.querySelector('.indiv-msg-text').value.trim();
+        const instantCheck = card.querySelector('.indiv-msg-instant');
+        const isInstant = instantCheck ? instantCheck.checked : false;
+
+        let scheduledTime = null;
+        if (!isInstant) {
+          const timeInput = card.querySelector('.indiv-msg-time');
+          scheduledTime = timeInput ? timeInput.value : null;
+        }
+
+        const buttons = card.getButtons();
+        messages.push({
+          messageText: text,
+          imageBase64: card.getImageBase64(),
+          buttons,
+          scheduledTime
+        });
+      }
+
+      // Submit each scheduled message as individual campaign
+      try {
+        let successCount = 0;
+        for (const msg of messages) {
+          const payload = {
+            name: `Individu - ${name || phone}`,
+            senderProfiles: [senderProfileId],
+            scheduledTime: msg.scheduledTime || new Date().toISOString(),
+            messageTemplate: msg.messageText,
+            imageBase64: msg.imageBase64,
+            buttons: msg.buttons,
+            contacts: [{ name: name || phone, phone }]
+          };
+
+          const res = await fetch('/api/campaigns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) successCount++;
+        }
+
+        alert(`Sukses menjadwalkan ${successCount} pesan follow-up untuk ${name || phone}!`);
+        formIndivSa.reset();
+        container.innerHTML = '';
+        container.appendChild(createIndivMessageCard());
+      } catch (err) {
+        alert('Terjadi kesalahan: ' + err.message);
+      }
+    });
+  }
+
+  // Populate WA Profile selects on tab load
+  async function populateProfilesDropdown() {
+    try {
+      const res = await fetch('/api/profiles');
+      const profiles = await res.json();
+      const selectSa = document.getElementById('indiv-profile-sa');
+      if (selectSa) {
+        selectSa.innerHTML = '<option value="">-- Pilih Profil WA --</option>';
+        profiles.forEach(p => {
+          const opt = document.value = p.profileId;
+          const optionEl = document.createElement('option');
+          optionEl.value = p.profileId;
+          optionEl.textContent = `${p.name} (${p.phone || p.status})`;
+          selectSa.appendChild(optionEl);
+        });
+      }
+    } catch (e) {}
+  }
+
+  // Auto initialize on tab switch
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const tab = item.getAttribute('data-tab');
+      if (tab === 'blast-individu-tab') {
+        loadMasterPrograms();
+        populateProfilesDropdown();
+        const saContainer = document.getElementById('indiv-messages-container-sa');
+        if (saContainer && saContainer.querySelectorAll('.message-card').length === 0) {
+          saContainer.appendChild(createIndivMessageCard());
+        }
+      }
+    });
+  });
+
+  // Initial load
+  resetMasterForm();
+  loadMasterPrograms();
 })();
 
