@@ -288,16 +288,6 @@
           <!-- LEFT COLUMN: Blaster Scheduler (Campaign / Individual) -->
           <div id="ai-blaster-left-col" class="panel glass" style="display: flex; flex-direction: column; padding: 20px; overflow-y: auto; height: 100%;">
             
-            <!-- Switcher: Campaign Massal vs Blast Individu -->
-            <div style="display: flex; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;">
-              <button type="button" class="btn btn-primary" id="btn-switch-blaster-mass" style="flex: 1; padding: 8px 12px; font-size: 13px; background: var(--accent-primary); border-color: var(--accent-primary);">
-                <i class="fas fa-bullhorn"></i> Campaign Massal (Broadcast)
-              </button>
-              <button type="button" class="btn btn-secondary" id="btn-switch-blaster-indiv" style="flex: 1; padding: 8px 12px; font-size: 13px; background: transparent; border-color: transparent;">
-                <i class="fas fa-user-tag"></i> Blast Individu (Follow-up)
-              </button>
-            </div>
-
             <!-- CONTAINER A: Campaign Massal Form -->
             <div id="ai-blaster-mass-container" style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
               <form id="form-create-campaign-ai" class="campaign-form-layout" novalidate style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
@@ -533,67 +523,6 @@
                   </button>
                 </div>
 
-              </form>
-            </div>
-
-            <!-- CONTAINER B: Blast Individu Form (hidden by default) -->
-            <div id="ai-blaster-indiv-container" style="display: none; flex-direction: column; gap: 15px; flex: 1;">
-              <form id="form-individual-blast-ai" style="display: flex; flex-direction: column; gap: 20px;">
-                
-                <!-- TOP PANEL: SETUP AREA (FULL WIDTH) -->
-                <div class="campaign-setup-column">
-                  <div class="panel glass" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px;">
-                    <h3 style="font-size: 15px; font-weight: 600; color: var(--accent-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                      <i class="fas fa-user-friends"></i> Profil Penerima & Pengirim
-                    </h3>
-                    
-                    <div class="individual-setup-grid" style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px;">
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="indiv-phone">Nomor WhatsApp Penerima <span class="required">*</span></label>
-                        <input type="text" id="indiv-phone" required placeholder="Contoh: 08123456789">
-                      </div>
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="indiv-name">Nama Penerima (Opsional)</label>
-                        <input type="text" id="indiv-name" placeholder="Contoh: Rangga">
-                      </div>
-                      <!-- WhatsApp Profile Dropdown Selection for Individual Blast -->
-                      <div class="form-group" style="margin-bottom: 0;">
-                        <label for="indiv-profile-selector">Profil WhatsApp Pengirim <span class="required">*</span></label>
-                        <select id="indiv-profile-selector" class="form-control" required style="padding: 10px 14px; font-size: 13.5px; height: auto; background: #0d0d0d; border: 1px solid #292929; color: #fff;">
-                          <option value="">-- Pilih Profil WhatsApp --</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- BOTTOM AREA: MESSAGES TIMELINE (FULL WIDTH) -->
-                <div class="campaign-templates-column" style="display: flex; flex-direction: column; gap: 16px;">
-                  <div class="form-group" style="margin-bottom: 0;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                      <label style="margin: 0; font-size: 15px; font-weight: 600;"><i class="fas fa-history"></i> Urutan Pesan & Waktu Pengiriman (Follow-up Timeline)</label>
-                      <button type="button" class="btn btn-open-ai-generator" style="padding: 6px 14px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #050505; border: none; box-shadow: 0 0 14px rgba(16, 185, 129, 0.45); display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;" title="Tulis pesan secara otomatis menggunakan AI">
-                        <i class="fas fa-magic"></i> Tulis Pesan dengan AI
-                      </button>
-                    </div>
-                    
-                    <div id="indiv-messages-container" style="display: flex; flex-direction: column; gap: 15px;">
-                      <!-- Dynamic message cards will be created here -->
-                    </div>
-                    
-                    <div style="margin-top: 12px;">
-                      <button type="button" class="btn btn-secondary btn-small" id="btn-add-followup-message" style="padding: 8px 16px; font-size: 12px;">
-                        <i class="fas fa-plus"></i> Tambah Pesan Follow-Up Lain
-                      </button>
-                    </div>
-                  </div>
-
-                  <button type="submit" id="btn-submit-individual" class="btn btn-primary btn-large btn-block" style="padding: 14px 28px; font-size: 15px; background: var(--accent-primary); border-color: var(--accent-primary); margin-top: 10px;">
-                    <i class="fas fa-paper-plane"></i> Kirim & Jadwalkan Follow-Up
-                  </button>
-                </div>
-
-              </form>
             </div>
 
           </div>
