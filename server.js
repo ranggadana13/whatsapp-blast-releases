@@ -2414,7 +2414,7 @@ app.get('/api/settings/ai', async (req, res) => {
     });
     
     if (!config.aiProvider) config.aiProvider = 'gemini';
-    if (!config.geminiModel) config.geminiModel = 'gemini-2.5-flash';
+    if (!config.geminiModel) config.geminiModel = 'gemini-3.6-flash';
     
     res.json(config);
   } catch (error) {
@@ -2483,7 +2483,7 @@ ATURAN UTAMA: Output Anda HARUS langsung berupa teks isi pesan WhatsApp yang sia
       }
 
       const modelSetting = await Setting.findOne({ key: 'geminiModel' });
-      const geminiModel = modelSetting && modelSetting.value ? modelSetting.value.trim() : 'gemini-2.5-flash';
+      const geminiModel = modelSetting && modelSetting.value ? modelSetting.value.trim() : 'gemini-3.6-flash';
 
       // Support multi-key rotation (comma separated)
       const keys = keySetting.value.split(',').map(k => k.trim()).filter(Boolean);
@@ -2697,7 +2697,7 @@ ATURAN RE-WRITE:
       }
 
       const modelSetting = await Setting.findOne({ key: 'geminiModel' });
-      const geminiModel = modelSetting && modelSetting.value ? modelSetting.value.trim() : 'gemini-2.5-flash';
+      const geminiModel = modelSetting && modelSetting.value ? modelSetting.value.trim() : 'gemini-3.6-flash';
 
       const keys = keySetting.value.split(',').map(k => k.trim()).filter(Boolean);
       if (keys.length === 0) {

@@ -3601,7 +3601,7 @@ async function loadAiSettings() {
       }
 
       const settingsGeminiModel = document.getElementById('settings-gemini-model');
-      if (settingsGeminiModel) settingsGeminiModel.value = data.geminiModel || 'gemini-2.5-flash';
+      if (settingsGeminiModel) settingsGeminiModel.value = data.geminiModel || 'gemini-3.6-flash';
 
       if (settingsOpenaiKey) settingsOpenaiKey.value = data.openaiKey || '';
       if (settingsOpenaiModel) settingsOpenaiModel.value = data.openaiModel || 'gpt-4o-mini';
@@ -3628,7 +3628,7 @@ async function loadAiSettings() {
       const engineBadge = document.getElementById('ai-engine-badge');
       if (engineBadge) {
         let activeModel = '';
-        if (data.aiProvider === 'gemini') activeModel = data.geminiModel || 'gemini-2.5-flash';
+        if (data.aiProvider === 'gemini') activeModel = data.geminiModel || 'gemini-3.6-flash';
         else if (data.aiProvider === 'openai') activeModel = data.openaiModel || 'gpt-4o-mini';
         else if (data.aiProvider === 'claude') activeModel = data.claudeModel || 'claude-3-5-sonnet';
         else if (data.aiProvider === 'deepseek') activeModel = data.deepseekModel || 'deepseek-chat';
@@ -3658,7 +3658,7 @@ if (btnSaveAiSettings) {
     const body = {
       aiProvider: settingsAiProvider ? settingsAiProvider.value : 'gemini',
       geminiApiKey: geminiKeysStr,
-      geminiModel: settingsGeminiModel ? settingsGeminiModel.value : 'gemini-2.5-flash',
+      geminiModel: settingsGeminiModel ? settingsGeminiModel.value : 'gemini-3.6-flash',
       openaiKey: settingsOpenaiKey ? settingsOpenaiKey.value : '',
       openaiModel: settingsOpenaiModel ? settingsOpenaiModel.value : 'gpt-4o-mini',
       claudeKey: settingsClaudeKey ? settingsClaudeKey.value : '',
