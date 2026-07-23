@@ -36,7 +36,7 @@ namespace WhatsAppBlastLauncher
                 // 4. Open Application UI in Standalone Desktop App Window Mode (No Address Bar & No Tabs)
                 ProcessStartInfo appInfo = new ProcessStartInfo();
                 appInfo.FileName = "cmd.exe";
-                appInfo.Arguments = "/c start msedge --app=http://localhost:3188 || start chrome --app=http://localhost:3188 || start http://localhost:3188";
+                appInfo.Arguments = "/c start msedge --app=http://localhost:3000 || start chrome --app=http://localhost:3000 || start http://localhost:3000";
                 appInfo.CreateNoWindow = true;
                 appInfo.WindowStyle = ProcessWindowStyle.Hidden;
                 appInfo.UseShellExecute = false;

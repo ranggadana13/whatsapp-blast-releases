@@ -1,17 +1,17 @@
 @echo off
-title Kompilasi Installer 1-Click WA Blast Desktop
+title Kompilasi Installer 1-Click REPLIX AI Desktop
 cd /d "%~dp0"
 
 echo =======================================================
-echo     KOMPILASI INSTALLER 1-CLICK WA BLAST DESKTOP
+echo     KOMPILASI INSTALLER 1-CLICK REPLIX AI DESKTOP
 echo =======================================================
 echo.
 
 echo [1/3] Memeriksa Kompiler Launcher (Launcher.exe)...
 set CSC_PATH=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe
 if exist "%CSC_PATH%" (
-    "%CSC_PATH%" /target:winexe /out:Launcher.exe Launcher.cs
-    echo Launcher.exe berhasil dikompilasi.
+    "%CSC_PATH%" /target:winexe /win32icon:build\icon.ico /out:Launcher.exe Launcher.cs
+    echo Launcher.exe berhasil dikompilasi dengan Icon REPLIX AI.
 )
 echo.
 
@@ -30,7 +30,7 @@ if exist "%ISCC_PATH%" (
     "%ISCC_PATH%" installer-config.iss
     echo.
     echo =======================================================
-    echo BERHASIL! File Setup-WABlast-v1.0.0.exe tersimpan di folder dist\
+    echo BERHASIL! File Setup-REPLIX-AI-v1.0.2.exe tersimpan di folder dist\
     echo =======================================================
 ) else (
     echo.

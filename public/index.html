@@ -288,6 +288,16 @@
           <!-- LEFT COLUMN: Blaster Scheduler (Campaign / Individual) -->
           <div id="ai-blaster-left-col" class="panel glass" style="display: flex; flex-direction: column; padding: 20px; overflow-y: auto; height: 100%;">
             
+            <!-- Switcher: Campaign Massal vs Blast Individu -->
+            <div style="display: flex; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;">
+              <button type="button" class="btn btn-primary" id="btn-switch-blaster-mass" style="flex: 1; padding: 8px 12px; font-size: 13px; background: var(--accent-primary); border-color: var(--accent-primary);">
+                <i class="fas fa-bullhorn"></i> Campaign Massal (Broadcast)
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-switch-blaster-indiv" style="flex: 1; padding: 8px 12px; font-size: 13px; background: transparent; border-color: transparent;">
+                <i class="fas fa-user-tag"></i> Blast Individu (Follow-up)
+              </button>
+            </div>
+
             <!-- CONTAINER A: Campaign Massal Form -->
             <div id="ai-blaster-mass-container" style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
               <form id="form-create-campaign-ai" class="campaign-form-layout" novalidate style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start;">
@@ -523,6 +533,67 @@
                   </button>
                 </div>
 
+              </form>
+            </div>
+
+            <!-- CONTAINER B: Blast Individu Form (hidden by default) -->
+            <div id="ai-blaster-indiv-container" style="display: none; flex-direction: column; gap: 15px; flex: 1;">
+              <form id="form-individual-blast-ai" style="display: flex; flex-direction: column; gap: 20px;">
+                
+                <!-- TOP PANEL: SETUP AREA (FULL WIDTH) -->
+                <div class="campaign-setup-column">
+                  <div class="panel glass" style="padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--bg-panel); border: 1px solid var(--border-glass); border-radius: 12px;">
+                    <h3 style="font-size: 15px; font-weight: 600; color: var(--accent-primary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                      <i class="fas fa-user-friends"></i> Profil Penerima & Pengirim
+                    </h3>
+                    
+                    <div class="individual-setup-grid" style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 16px;">
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-phone">Nomor WhatsApp Penerima <span class="required">*</span></label>
+                        <input type="text" id="indiv-phone" required placeholder="Contoh: 08123456789">
+                      </div>
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-name">Nama Penerima (Opsional)</label>
+                        <input type="text" id="indiv-name" placeholder="Contoh: Rangga">
+                      </div>
+                      <!-- WhatsApp Profile Dropdown Selection for Individual Blast -->
+                      <div class="form-group" style="margin-bottom: 0;">
+                        <label for="indiv-profile-selector">Profil WhatsApp Pengirim <span class="required">*</span></label>
+                        <select id="indiv-profile-selector" class="form-control" required style="padding: 10px 14px; font-size: 13.5px; height: auto; background: #0d0d0d; border: 1px solid #292929; color: #fff;">
+                          <option value="">-- Pilih Profil WhatsApp --</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- BOTTOM AREA: MESSAGES TIMELINE (FULL WIDTH) -->
+                <div class="campaign-templates-column" style="display: flex; flex-direction: column; gap: 16px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                      <label style="margin: 0; font-size: 15px; font-weight: 600;"><i class="fas fa-history"></i> Urutan Pesan & Waktu Pengiriman (Follow-up Timeline)</label>
+                      <button type="button" class="btn btn-open-ai-generator" style="padding: 6px 14px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669); color: #050505; border: none; box-shadow: 0 0 14px rgba(16, 185, 129, 0.45); display: flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px;" title="Tulis pesan secara otomatis menggunakan AI">
+                        <i class="fas fa-magic"></i> Tulis Pesan dengan AI
+                      </button>
+                    </div>
+                    
+                    <div id="indiv-messages-container" style="display: flex; flex-direction: column; gap: 15px;">
+                      <!-- Dynamic message cards will be created here -->
+                    </div>
+                    
+                    <div style="margin-top: 12px;">
+                      <button type="button" class="btn btn-secondary btn-small" id="btn-add-followup-message" style="padding: 8px 16px; font-size: 12px;">
+                        <i class="fas fa-plus"></i> Tambah Pesan Follow-Up Lain
+                      </button>
+                    </div>
+                  </div>
+
+                  <button type="submit" id="btn-submit-individual" class="btn btn-primary btn-large btn-block" style="padding: 14px 28px; font-size: 15px; background: var(--accent-primary); border-color: var(--accent-primary); margin-top: 10px;">
+                    <i class="fas fa-paper-plane"></i> Kirim & Jadwalkan Follow-Up
+                  </button>
+                </div>
+
+              </form>
             </div>
 
           </div>
@@ -1088,47 +1159,6 @@
               </div>
             </div>
 
-            <!-- SOFTWARE VERSION & AUTO-UPDATE PANEL -->
-            <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%;">
-              <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-code-branch"></i> Informasi Versi & Auto-Update Aplikasi
-              </h2>
-              <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
-                Sistem pembaruan otomatis (Auto-Updater) terintegrasi secara langsung dengan server GitHub Releases untuk menjamin Anda selalu mendapatkan fitur dan keamanan terbaru.
-              </p>
-
-              <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 16px;">
-                      <i class="fas fa-rocket"></i>
-                    </div>
-                    <div>
-                      <div style="font-size: 14px; font-weight: 700; color: #fff;" id="settings-app-name-ver">REPLIX AI v1.0.2</div>
-                      <div style="font-size: 11.5px; color: var(--color-text-muted);" id="settings-ver-status-sub">Terpasang & Siap Digunakan</div>
-                    </div>
-                  </div>
-                  <span id="settings-version-badge" class="badge completed" style="font-size: 11px; padding: 4px 12px; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);">
-                    Terkini (v1.0.2)
-                  </span>
-                </div>
-
-                <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; font-size: 12.5px; color: #ccc; line-height: 1.5;">
-                  <strong>Catatan Rilis (Changelog):</strong>
-                  <div id="settings-ver-changelog" style="margin-top: 4px; font-size: 12px; color: var(--color-text-muted); font-style: italic;">
-                    Versi 1.0.2: Penambahan Master Studio Program Follow-Up, Kategori Preset Kustom, perbaikan koneksi ulang WA, dan pembaruan branding REPLIX AI.
-                  </div>
-                </div>
-              </div>
-
-              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-                <button type="button" id="btn-manual-check-update" class="btn btn-primary" style="padding: 10px 20px; font-size: 13px; font-weight: 600; background: var(--accent-primary); border-color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
-                  <i class="fas fa-sync-alt"></i> Cek Pembaruan Aplikasi Sekarang
-                </button>
-                <span id="update-check-status-text" style="font-size: 12px; color: var(--color-text-muted);">Aplikasi di versi terbaru.</span>
-              </div>
-            </div>
-
             <!-- LICENSE DETAIL PANEL -->
             <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; width: 100%;">
               <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
@@ -1209,14 +1239,14 @@
                 <!-- Hidden model selection with automated label for non-technical users -->
                 <div class="form-group" style="margin-bottom: 0; display: none;">
                   <select id="settings-gemini-model">
-                    <option value="gemini-3.6-flash" selected>Gemini 3.6 Flash</option>
+                    <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash</option>
                     <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
                     <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
                   </select>
                 </div>
                 <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
                   <p style="font-size: 13px; color: var(--color-text-muted); margin: 0;">
-                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> Gemini 3.6 Flash</strong> (Otomatis & Direkomendasikan)
+                    Model Aktif: <strong style="color: var(--accent-primary);"><i class="fas fa-robot"></i> Gemini 2.5 Flash</strong> (Otomatis & Direkomendasikan)
                   </p>
                 </div>
                 <span class="helper-info" style="font-size: 12px; color: var(--color-text-muted); line-height: 1.4;">

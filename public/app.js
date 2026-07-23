@@ -2418,104 +2418,36 @@ function initFocusModeSetting() {
 // ==========================================================================
 // SOFTWARE VERSION CHECKER & AUTO-PATCH UI HANDLER
 // ==========================================================================
-// SOFTWARE VERSION CHECKER & AUTO-UPDATE MANAGER
-// ==========================================================================
 async function initVersionChecker() {
   const versionBadge = document.getElementById('app-version-badge');
   const versionText = document.getElementById('app-version-text');
-  
-  const settingsAppName = document.getElementById('settings-app-name-ver');
-  const settingsVerBadge = document.getElementById('settings-version-badge');
-  const settingsVerChangelog = document.getElementById('settings-ver-changelog');
-  const updateCheckStatusText = document.getElementById('update-check-status-text');
-  const btnManualCheck = document.getElementById('btn-manual-check-update');
+  if (!versionBadge || !versionText) return;
 
-  async function checkVersion(isManualClick = false) {
-    if (isManualClick && btnManualCheck) {
-      btnManualCheck.disabled = true;
-      btnManualCheck.innerHTML = `<i class="fas fa-spinner spin"></i> Memeriksa Server...`;
-      if (updateCheckStatusText) updateCheckStatusText.textContent = 'Menghubungkan ke server rilis GitHub...';
-    }
+  try {
+    const res = await fetch('/api/system/version');
+    const data = await res.json();
+    
+    versionText.textContent = `v${data.currentVersion}`;
 
-    try {
-      const res = await fetch(`/api/system/version?t=${Date.now()}`);
-      const data = await res.json();
+    if (data.updateAvailable) {
+      versionBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+      versionBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
+      versionBadge.style.color = '#10b981';
+      versionBadge.style.cursor = 'pointer';
+      versionBadge.innerHTML = `<i class="fas fa-arrow-alt-circle-up" style="color:#10b981;"></i> Update v${data.latestVersion} Tersedia!`;
       
-      if (versionText) versionText.textContent = `v${data.currentVersion}`;
-      if (settingsAppName) settingsAppName.textContent = `REPLIX AI v${data.currentVersion}`;
-      if (settingsVerChangelog && data.changelog) settingsVerChangelog.textContent = data.changelog;
-
-      if (data.updateAvailable) {
-        if (versionBadge) {
-          versionBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-          versionBadge.style.border = '1px solid rgba(16, 185, 129, 0.35)';
-          versionBadge.style.color = '#10b981';
-          versionBadge.style.cursor = 'pointer';
-          versionBadge.innerHTML = `<i class="fas fa-arrow-alt-circle-up" style="color:#10b981;"></i> Update v${data.latestVersion} Tersedia!`;
-        }
-
-        if (settingsVerBadge) {
-          settingsVerBadge.textContent = `Update Tersedia (v${data.latestVersion})`;
-          settingsVerBadge.className = 'badge running';
-          settingsVerBadge.style.background = 'rgba(245, 158, 11, 0.15)';
-          settingsVerBadge.style.color = '#f59e0b';
-          settingsVerBadge.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-        }
-
-        if (updateCheckStatusText) {
-          updateCheckStatusText.innerHTML = `<span style="color:#f59e0b; font-weight:600;"><i class="fas fa-exclamation-circle"></i> Versi baru v${data.latestVersion} tersedia!</span>`;
-        }
-
-        const onVersionClick = () => {
-          const msg = `🚀 Pembaruan Aplikasi Tersedia!\n\nVersi Terpasang: v${data.currentVersion}\nVersi Terbaru: v${data.latestVersion}\n\nCatatan Perubahan:\n${data.changelog}\n\nApakah Anda ingin membuka halaman rilis/unduhan update sekarang?`;
-          if (confirm(msg)) {
-            if (data.downloadUrl) {
-              window.open(data.downloadUrl, '_blank');
-            }
+      versionBadge.addEventListener('click', () => {
+        const msg = `🚀 Pembaruan Aplikasi Tersedia!\n\nVersi Saat Ini: v${data.currentVersion}\nVersi Terbaru: v${data.latestVersion}\n\nCatatan Perubahan:\n${data.changelog}\n\nApakah Anda ingin membuka halaman unduhan update sekarang?`;
+        if (confirm(msg)) {
+          if (data.downloadUrl) {
+            window.open(data.downloadUrl, '_blank');
           }
-        };
-
-        if (versionBadge) versionBadge.onclick = onVersionClick;
-
-        if (isManualClick) {
-          onVersionClick();
         }
-      } else {
-        if (settingsVerBadge) {
-          settingsVerBadge.textContent = `Terkini (v${data.currentVersion})`;
-          settingsVerBadge.className = 'badge completed';
-          settingsVerBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-          settingsVerBadge.style.color = '#10b981';
-          settingsVerBadge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-        }
-
-        if (updateCheckStatusText) {
-          updateCheckStatusText.innerHTML = `<span style="color:#10b981;"><i class="fas fa-check-circle"></i> Aplikasi Anda sudah menggunakan versi terbaru (v${data.currentVersion}).</span>`;
-        }
-
-        if (isManualClick) {
-          alert(`✅ REPLIX AI Berada di Versi Terbaru!\n\nVersi Terpasang: v${data.currentVersion}\nStatus: Tidak ada pembaruan baru di server.`);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check application version:', err);
-      if (updateCheckStatusText) {
-        updateCheckStatusText.textContent = 'Gagal terhubung ke server pembaruan.';
-      }
-    } finally {
-      if (btnManualCheck) {
-        btnManualCheck.disabled = false;
-        btnManualCheck.innerHTML = `<i class="fas fa-sync-alt"></i> Cek Pembaruan Aplikasi Sekarang`;
-      }
+      });
     }
+  } catch (err) {
+    console.error('Failed to check application version:', err);
   }
-
-  if (btnManualCheck) {
-    btnManualCheck.addEventListener('click', () => checkVersion(true));
-  }
-
-  // Initial check on boot
-  checkVersion(false);
 }
 
 // ==========================================================================
@@ -3601,7 +3533,7 @@ async function loadAiSettings() {
       }
 
       const settingsGeminiModel = document.getElementById('settings-gemini-model');
-      if (settingsGeminiModel) settingsGeminiModel.value = data.geminiModel || 'gemini-3.6-flash';
+      if (settingsGeminiModel) settingsGeminiModel.value = data.geminiModel || 'gemini-2.5-flash';
 
       if (settingsOpenaiKey) settingsOpenaiKey.value = data.openaiKey || '';
       if (settingsOpenaiModel) settingsOpenaiModel.value = data.openaiModel || 'gpt-4o-mini';
@@ -3628,7 +3560,7 @@ async function loadAiSettings() {
       const engineBadge = document.getElementById('ai-engine-badge');
       if (engineBadge) {
         let activeModel = '';
-        if (data.aiProvider === 'gemini') activeModel = data.geminiModel || 'gemini-3.6-flash';
+        if (data.aiProvider === 'gemini') activeModel = data.geminiModel || 'gemini-2.5-flash';
         else if (data.aiProvider === 'openai') activeModel = data.openaiModel || 'gpt-4o-mini';
         else if (data.aiProvider === 'claude') activeModel = data.claudeModel || 'claude-3-5-sonnet';
         else if (data.aiProvider === 'deepseek') activeModel = data.deepseekModel || 'deepseek-chat';
@@ -3658,7 +3590,7 @@ if (btnSaveAiSettings) {
     const body = {
       aiProvider: settingsAiProvider ? settingsAiProvider.value : 'gemini',
       geminiApiKey: geminiKeysStr,
-      geminiModel: settingsGeminiModel ? settingsGeminiModel.value : 'gemini-3.6-flash',
+      geminiModel: settingsGeminiModel ? settingsGeminiModel.value : 'gemini-2.5-flash',
       openaiKey: settingsOpenaiKey ? settingsOpenaiKey.value : '',
       openaiModel: settingsOpenaiModel ? settingsOpenaiModel.value : 'gpt-4o-mini',
       claudeKey: settingsClaudeKey ? settingsClaudeKey.value : '',

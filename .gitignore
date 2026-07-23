@@ -2,7 +2,7 @@ node_modules/
 dist/
 .env
 data/
-.wwebjs_cache/
-*.mdmp
 *.log
 .DS_Store
+.wwebjs_cache/
+*.mdmp
