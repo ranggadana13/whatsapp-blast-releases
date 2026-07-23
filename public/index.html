@@ -1159,6 +1159,47 @@
               </div>
             </div>
 
+            <!-- SOFTWARE VERSION & AUTO-UPDATE PANEL -->
+            <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box; width: 100%;">
+              <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-code-branch"></i> Informasi Versi & Auto-Update Aplikasi
+              </h2>
+              <p style="font-size: 13px; color: var(--color-text-muted); line-height: 1.5; margin: 0;">
+                Sistem pembaruan otomatis (Auto-Updater) terintegrasi secara langsung dengan server GitHub Releases untuk menjamin Anda selalu mendapatkan fitur dan keamanan terbaru.
+              </p>
+
+              <div style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 16px;">
+                      <i class="fas fa-rocket"></i>
+                    </div>
+                    <div>
+                      <div style="font-size: 14px; font-weight: 700; color: #fff;" id="settings-app-name-ver">REPLIX AI v1.0.2</div>
+                      <div style="font-size: 11.5px; color: var(--color-text-muted);" id="settings-ver-status-sub">Terpasang & Siap Digunakan</div>
+                    </div>
+                  </div>
+                  <span id="settings-version-badge" class="badge completed" style="font-size: 11px; padding: 4px 12px; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3);">
+                    Terkini (v1.0.2)
+                  </span>
+                </div>
+
+                <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; font-size: 12.5px; color: #ccc; line-height: 1.5;">
+                  <strong>Catatan Rilis (Changelog):</strong>
+                  <div id="settings-ver-changelog" style="margin-top: 4px; font-size: 12px; color: var(--color-text-muted); font-style: italic;">
+                    Versi 1.0.2: Penambahan Master Studio Program Follow-Up, Kategori Preset Kustom, perbaikan koneksi ulang WA, dan pembaruan branding REPLIX AI.
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+                <button type="button" id="btn-manual-check-update" class="btn btn-primary" style="padding: 10px 20px; font-size: 13px; font-weight: 600; background: var(--accent-primary); border-color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
+                  <i class="fas fa-sync-alt"></i> Cek Pembaruan Aplikasi Sekarang
+                </button>
+                <span id="update-check-status-text" style="font-size: 12px; color: var(--color-text-muted);">Aplikasi di versi terbaru.</span>
+              </div>
+            </div>
+
             <!-- LICENSE DETAIL PANEL -->
             <div class="panel glass" style="padding: 25px; display: flex; flex-direction: column; gap: 15px; box-sizing: border-box; width: 100%;">
               <h2 style="margin: 0; color: var(--accent-primary); display: flex; align-items: center; gap: 10px;">
