@@ -19,7 +19,8 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
 
   // Load local server port
-  mainWindow.loadURL('http://localhost:3000');
+  const port = process.env.PORT || 3188;
+  mainWindow.loadURL(`http://localhost:${port}`);
 
   mainWindow.on('closed', () => {
     mainWindow = null;

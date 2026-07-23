@@ -10,7 +10,7 @@ const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { connectDB, WAProfile, Campaign, MessageLog, AutoReply, Setting, FollowUpProgram } = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3188;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/whatsapp_blast';
 
 app.use(express.json({ limit: '10mb' }));
